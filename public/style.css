@@ -303,13 +303,35 @@ body {
 }
 
 #fontFamily {
-  background: none;
+  background: var(--toolbar-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 3px 6px;
   font-size: 13px;
   color: var(--text);
   cursor: pointer;
+  outline: none;
+}
+
+#fontSizeVal {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+#fontSizeVal:hover {
+  background: var(--item-hover);
+}
+
+#fontSizeInput {
+  width: 36px;
+  text-align: center;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 13px;
+  padding: 1px 4px;
   outline: none;
 }
 

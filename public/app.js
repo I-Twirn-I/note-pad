@@ -267,23 +267,45 @@ document.getElementById('duplicateBtn').addEventListener('click', async () => {
 let fontSize = 16;
 const fontSizeVal = document.getElementById('fontSizeVal');
 
-document.getElementById('fontSizeInc').addEventListener('click', () => {
-  if (fontSize >= 48) return;
-  fontSize += 2;
+function applyFontSize(size) {
+  fontSize = Math.min(48, Math.max(10, size));
   fontSizeVal.textContent = fontSize;
   noteContent.style.fontSize = fontSize + 'px';
-});
+  autoSave();
+}
 
-document.getElementById('fontSizeDec').addEventListener('click', () => {
-  if (fontSize <= 10) return;
-  fontSize -= 2;
-  fontSizeVal.textContent = fontSize;
-  noteContent.style.fontSize = fontSize + 'px';
+document.getElementById('fontSizeInc').addEventListener('click', () => applyFontSize(fontSize + 2));
+document.getElementById('fontSizeDec').addEventListener('click', () => applyFontSize(fontSize - 2));
+
+// Sayıya tıklayınca input aç
+fontSizeVal.addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.id = 'fontSizeInput';
+  input.value = fontSize;
+  input.min = 10;
+  input.max = 48;
+  fontSizeVal.replaceWith(input);
+  input.focus();
+  input.select();
+
+  function confirm() {
+    const val = parseInt(input.value);
+    input.replaceWith(fontSizeVal);
+    if (!isNaN(val)) applyFontSize(val);
+  }
+
+  input.addEventListener('blur', confirm);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') confirm();
+    if (e.key === 'Escape') { input.replaceWith(fontSizeVal); }
+  });
 });
 
 // Yazı tipi
 document.getElementById('fontFamily').addEventListener('change', (e) => {
   noteContent.style.fontFamily = e.target.value;
+  autoSave();
 });
 
 // PDF
