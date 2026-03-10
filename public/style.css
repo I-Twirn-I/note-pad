@@ -132,8 +132,19 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s;
-  border-top: 3px solid transparent;
   overflow: hidden;
+  position: relative;
+}
+
+#noteList li .note-color-bar {
+  height: 3px;
+  border-radius: 2px;
+  margin-bottom: 6px;
+  display: none;
+}
+
+#noteList li .note-color-bar.visible {
+  display: block;
 }
 
 #noteList li:hover {
@@ -304,7 +315,7 @@ body {
 
 #noteContent {
   flex: 1;
-  resize: none;
+  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
@@ -314,10 +325,18 @@ body {
   color: var(--text);
   outline: none;
   font-family: 'Segoe UI', sans-serif;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 #noteContent:focus {
   border-color: var(--accent);
+}
+
+#noteContent:empty:before {
+  content: attr(data-placeholder);
+  color: var(--subtext);
+  pointer-events: none;
 }
 
 .editor-footer {

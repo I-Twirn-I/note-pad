@@ -47,7 +47,12 @@ function renderNoteList() {
   notes.forEach(note => {
     const li = document.createElement('li');
     if (note.id === currentNoteId) li.classList.add('active');
-    if (note.color) li.style.borderTopColor = note.color;
+
+    // Üst renk çubuğu
+    const colorBar = document.createElement('div');
+    colorBar.className = 'note-color-bar' + (note.color ? ' visible' : '');
+    if (note.color) colorBar.style.background = note.color;
+
     li.innerHTML = `
       <div class="note-title">${escapeHtml(note.title || 'Başlıksız Not')}</div>
       <div class="note-meta">
@@ -55,6 +60,7 @@ function renderNoteList() {
         ${note.category ? `<span class="note-category">${escapeHtml(note.category)}</span>` : ''}
       </div>
     `;
+    li.insertBefore(colorBar, li.firstChild);
     li.addEventListener('click', () => openNote(note.id));
     noteList.appendChild(li);
   });
@@ -66,21 +72,26 @@ async function openNote(id) {
   const res = await fetch(`/api/notes/${id}`);
   const note = await res.json();
   noteTitle.value = note.title || '';
-  noteContent.value = note.content || '';
+  noteContent.innerHTML = note.content || '';
   noteCategory.value = note.category || '';
   currentColor = note.color || '';
   updateColorButtons();
-  noteContent.style.color = currentColor || 'var(--text)';
   updateWordCount();
   saveStatus.textContent = '';
   renderNoteList();
 }
 
-// Renk butonları
+// Renk uygula (sadece seçili veya yeni yazılacak metne)
 document.querySelectorAll('.color-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     currentColor = btn.dataset.color;
     updateColorButtons();
+    noteContent.focus();
+    if (currentColor) {
+      document.execCommand('foreColor', false, currentColor);
+    } else {
+      document.execCommand('removeFormat', false, null);
+    }
     autoSave();
   });
 });
@@ -88,11 +99,6 @@ document.querySelectorAll('.color-btn').forEach(btn => {
 function updateColorButtons() {
   document.querySelectorAll('.color-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.color === currentColor);
-  });
-  const color = currentColor || 'var(--text)';
-  noteContent.style.color = color;
-  document.querySelectorAll('.fmt-btn').forEach(btn => {
-    btn.style.color = color;
   });
 }
 
@@ -118,7 +124,7 @@ async function saveCurrentNote() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       title: noteTitle.value || 'Başlıksız Not',
-      content: noteContent.value,
+      content: noteContent.innerHTML,
       category: noteCategory.value.trim(),
       color: currentColor
     })
@@ -141,9 +147,9 @@ noteCategory.addEventListener('input', autoSave);
 
 // Kelime sayacı
 function updateWordCount() {
-  const text = noteContent.value.trim();
+  const text = noteContent.innerText.trim();
   const words = text ? text.split(/\s+/).length : 0;
-  const chars = noteContent.value.length;
+  const chars = noteContent.innerText.length;
   wordCount.textContent = `${words} kelime · ${chars} karakter`;
 }
 
@@ -154,7 +160,7 @@ document.getElementById('deleteNoteBtn').addEventListener('click', async () => {
   await fetch(`/api/notes/${currentNoteId}`, { method: 'DELETE' });
   currentNoteId = null;
   noteTitle.value = '';
-  noteContent.value = '';
+  noteContent.innerHTML = '';
   noteCategory.value = '';
   currentColor = '';
   updateColorButtons();
@@ -170,38 +176,21 @@ categoryFilter.addEventListener('change', loadNotes);
 document.querySelectorAll('.fmt-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const cmd = btn.dataset.cmd;
-    const start = noteContent.selectionStart;
-    const end = noteContent.selectionEnd;
-    const selected = noteContent.value.substring(start, end);
-    const before = noteContent.value.substring(0, start);
-    const after = noteContent.value.substring(end);
-
-    let insert = '';
-    let cursorOffset = 0;
+    noteContent.focus();
 
     if (cmd === 'bold') {
-      insert = `**${selected || 'kalın metin'}**`;
-      cursorOffset = selected ? insert.length : 2;
+      document.execCommand('bold');
     } else if (cmd === 'italic') {
-      insert = `_${selected || 'italik metin'}_`;
-      cursorOffset = selected ? insert.length : 1;
-    } else if (cmd === 'heading') {
-      insert = `\n## ${selected || 'Başlık'}\n`;
-      cursorOffset = insert.length;
+      document.execCommand('italic');
     } else if (cmd === 'ul') {
-      insert = `\n- ${selected || 'madde'}\n`;
-      cursorOffset = insert.length;
+      document.execCommand('insertUnorderedList');
     } else if (cmd === 'ol') {
-      insert = `\n1. ${selected || 'madde'}\n`;
-      cursorOffset = insert.length;
+      document.execCommand('insertOrderedList');
+    } else if (cmd === 'heading') {
+      document.execCommand('formatBlock', false, 'h2');
     } else if (cmd === 'hr') {
-      insert = `\n---\n`;
-      cursorOffset = insert.length;
+      document.execCommand('insertHorizontalRule');
     }
-
-    noteContent.value = before + insert + after;
-    noteContent.selectionStart = noteContent.selectionEnd = start + cursorOffset;
-    noteContent.focus();
     autoSave();
     updateWordCount();
   });
@@ -211,7 +200,7 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
 document.getElementById('exportBtn').addEventListener('click', () => {
   if (!currentNoteId) return;
   const title = noteTitle.value || 'not';
-  const content = noteContent.value;
+  const content = noteContent.innerText;
   const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
