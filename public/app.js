@@ -48,11 +48,6 @@ function renderNoteList() {
     const li = document.createElement('li');
     if (note.id === currentNoteId) li.classList.add('active');
 
-    // Üst renk çubuğu
-    const colorBar = document.createElement('div');
-    colorBar.className = 'note-color-bar' + (note.color ? ' visible' : '');
-    if (note.color) colorBar.style.background = note.color;
-
     li.innerHTML = `
       <div class="note-title">${escapeHtml(note.title || 'Başlıksız Not')}</div>
       <div class="note-meta">
@@ -60,7 +55,6 @@ function renderNoteList() {
         ${note.category ? `<span class="note-category">${escapeHtml(note.category)}</span>` : ''}
       </div>
     `;
-    li.insertBefore(colorBar, li.firstChild);
     li.addEventListener('click', () => openNote(note.id));
     noteList.appendChild(li);
   });
