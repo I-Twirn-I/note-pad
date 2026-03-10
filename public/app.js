@@ -47,7 +47,7 @@ function renderNoteList() {
   notes.forEach(note => {
     const li = document.createElement('li');
     if (note.id === currentNoteId) li.classList.add('active');
-    if (note.color) li.style.borderLeftColor = note.color;
+    if (note.color) li.style.borderTopColor = note.color;
     li.innerHTML = `
       <div class="note-title">${escapeHtml(note.title || 'Başlıksız Not')}</div>
       <div class="note-meta">
@@ -70,6 +70,7 @@ async function openNote(id) {
   noteCategory.value = note.category || '';
   currentColor = note.color || '';
   updateColorButtons();
+  noteContent.style.color = currentColor || 'var(--text)';
   updateWordCount();
   saveStatus.textContent = '';
   renderNoteList();
@@ -87,6 +88,11 @@ document.querySelectorAll('.color-btn').forEach(btn => {
 function updateColorButtons() {
   document.querySelectorAll('.color-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.color === currentColor);
+  });
+  const color = currentColor || 'var(--text)';
+  noteContent.style.color = color;
+  document.querySelectorAll('.fmt-btn').forEach(btn => {
+    btn.style.color = color;
   });
 }
 
