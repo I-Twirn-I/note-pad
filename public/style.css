@@ -25,6 +25,7 @@ body.light {
   --item-active: #d0d0d0;
   --input-bg: #f5f5f5;
   --delete: #ef4444;
+  --toolbar-bg: #f0f0f0;
 }
 
 /* DARK TEMA */
@@ -41,6 +42,7 @@ body.dark {
   --item-active: #333333;
   --input-bg: #2a2a2a;
   --delete: #ef4444;
+  --toolbar-bg: #2a2a2a;
 }
 
 body {
@@ -56,7 +58,7 @@ body {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  gap: 12px;
+  gap: 10px;
 }
 
 .sidebar-header {
@@ -79,7 +81,8 @@ body {
   font-size: 16px;
 }
 
-.search-box input {
+.search-box input,
+.category-filter select {
   width: 100%;
   padding: 8px 12px;
   border-radius: 8px;
@@ -90,7 +93,12 @@ body {
   outline: none;
 }
 
-.search-box input:focus {
+.category-filter select {
+  cursor: pointer;
+}
+
+.search-box input:focus,
+.category-filter select:focus {
   border-color: var(--accent);
 }
 
@@ -124,6 +132,7 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s;
+  border-left: 4px solid transparent;
 }
 
 #noteList li:hover {
@@ -143,10 +152,24 @@ body {
   text-overflow: ellipsis;
 }
 
+#noteList li .note-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 3px;
+  align-items: center;
+}
+
 #noteList li .note-date {
   font-size: 12px;
   color: var(--subtext);
-  margin-top: 2px;
+}
+
+#noteList li .note-category {
+  font-size: 11px;
+  color: var(--subtext);
+  background: var(--border);
+  padding: 1px 6px;
+  border-radius: 10px;
 }
 
 /* EDITOR */
@@ -156,7 +179,7 @@ body {
   flex-direction: column;
   background: var(--editor-bg);
   padding: 24px;
-  gap: 12px;
+  gap: 10px;
 }
 
 .editor-header {
@@ -196,6 +219,88 @@ body {
   background: #fee2e2;
 }
 
+/* META (kategori + renk) */
+.editor-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#noteCategory {
+  flex: 1;
+  min-width: 150px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+
+#noteCategory:focus {
+  border-color: var(--accent);
+}
+
+.color-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--subtext);
+}
+
+.color-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  background: var(--input-bg);
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.color-btn:hover,
+.color-btn.active {
+  transform: scale(1.3);
+  border-color: var(--text);
+}
+
+/* TOOLBAR */
+.toolbar {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  flex-wrap: wrap;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.fmt-btn,
+#exportBtn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  transition: background 0.15s;
+}
+
+.fmt-btn:hover,
+#exportBtn:hover {
+  background: var(--item-hover);
+  border-color: var(--border);
+}
+
 #noteContent {
   flex: 1;
   resize: none;
@@ -207,6 +312,7 @@ body {
   background: var(--input-bg);
   color: var(--text);
   outline: none;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 #noteContent:focus {
@@ -217,11 +323,19 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
+}
+
+#wordCount {
+  font-size: 12px;
+  color: var(--subtext);
 }
 
 #saveStatus {
   font-size: 13px;
   color: var(--subtext);
+  flex: 1;
+  text-align: center;
 }
 
 #saveBtn {
@@ -238,13 +352,4 @@ body {
 
 #saveBtn:hover {
   background: var(--accent-hover);
-}
-
-.empty-state {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--subtext);
-  font-size: 15px;
 }

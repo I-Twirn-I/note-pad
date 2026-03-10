@@ -16,6 +16,11 @@
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="Notlarda ara..." />
     </div>
+    <div class="category-filter">
+      <select id="categoryFilter">
+        <option value="">Tüm kategoriler</option>
+      </select>
+    </div>
     <button id="newNoteBtn">+ Yeni Not</button>
     <ul id="noteList"></ul>
   </div>
@@ -25,8 +30,32 @@
       <input type="text" id="noteTitle" placeholder="Not başlığı..." />
       <button id="deleteNoteBtn" title="Notu sil">🗑️</button>
     </div>
+    <div class="editor-meta">
+      <input type="text" id="noteCategory" placeholder="Kategori (örn: iş, kişisel)..." />
+      <div class="color-picker">
+        <span>Renk:</span>
+        <button class="color-btn" data-color="" title="Varsayılan"></button>
+        <button class="color-btn" data-color="#ef4444" style="background:#ef4444" title="Kırmızı"></button>
+        <button class="color-btn" data-color="#f97316" style="background:#f97316" title="Turuncu"></button>
+        <button class="color-btn" data-color="#eab308" style="background:#eab308" title="Sarı"></button>
+        <button class="color-btn" data-color="#22c55e" style="background:#22c55e" title="Yeşil"></button>
+        <button class="color-btn" data-color="#3b82f6" style="background:#3b82f6" title="Mavi"></button>
+        <button class="color-btn" data-color="#a855f7" style="background:#a855f7" title="Mor"></button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="fmt-btn" data-cmd="bold" title="Kalın"><b>B</b></button>
+      <button class="fmt-btn" data-cmd="italic" title="İtalik"><i>I</i></button>
+      <button class="fmt-btn" data-cmd="heading" title="Başlık">H</button>
+      <button class="fmt-btn" data-cmd="ul" title="Madde işareti">• Liste</button>
+      <button class="fmt-btn" data-cmd="ol" title="Numaralı liste">1. Liste</button>
+      <button class="fmt-btn" data-cmd="hr" title="Yatay çizgi">—</button>
+      <div class="toolbar-spacer"></div>
+      <button id="exportBtn" title="İndir">⬇ İndir</button>
+    </div>
     <textarea id="noteContent" placeholder="Notunu buraya yaz..."></textarea>
     <div class="editor-footer">
+      <span id="wordCount">0 kelime</span>
       <span id="saveStatus"></span>
       <button id="saveBtn">Kaydet</button>
     </div>
