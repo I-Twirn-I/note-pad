@@ -86,6 +86,7 @@ async function openNote(id) {
   saveStatus.textContent = '';
   renderNoteList();
   showEditor();
+  loadAttachments();
 }
 
 // Renk uygula (sadece seçili veya yeni yazılacak metne)
@@ -176,6 +177,42 @@ document.getElementById('deleteNoteBtn').addEventListener('click', async () => {
   await loadNotes();
 });
 
+// Dosya yükleme
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  if (!currentNoteId) return;
+  const files = Array.from(e.target.files);
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append('file', file);
+    await fetch(`/api/notes/${currentNoteId}/attachments`, {
+      method: 'POST',
+      body: formData
+    });
+  }
+  e.target.value = '';
+  loadAttachments();
+});
+
+async function loadAttachments() {
+  if (!currentNoteId) return;
+  const res = await fetch(`/api/notes/${currentNoteId}/attachments`);
+  const attachments = await res.json();
+  const list = document.getElementById('attachmentList');
+  list.innerHTML = '';
+  attachments.forEach(a => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <a href="/uploads/${a.filename}" target="_blank" title="${escapeHtml(a.original_name)}">📎 ${escapeHtml(a.original_name)}</a>
+      <button class="del-attachment" data-id="${a.id}" title="Sil">✕</button>
+    `;
+    li.querySelector('.del-attachment').addEventListener('click', async () => {
+      await fetch(`/api/attachments/${a.id}`, { method: 'DELETE' });
+      loadAttachments();
+    });
+    list.appendChild(li);
+  });
+}
+
 // Arama & kategori filtresi
 searchInput.addEventListener('input', loadNotes);
 categoryFilter.addEventListener('change', loadNotes);
@@ -186,7 +223,11 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
     const cmd = btn.dataset.cmd;
     noteContent.focus();
 
-    if (cmd === 'bold') {
+    if (cmd === 'undo') {
+      document.execCommand('undo');
+    } else if (cmd === 'redo') {
+      document.execCommand('redo');
+    } else if (cmd === 'bold') {
       document.execCommand('bold');
     } else if (cmd === 'italic') {
       document.execCommand('italic');
@@ -202,6 +243,78 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
     autoSave();
     updateWordCount();
   });
+});
+
+// Notu kopyala
+document.getElementById('duplicateBtn').addEventListener('click', async () => {
+  if (!currentNoteId) return;
+  const res = await fetch('/api/notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: (noteTitle.value || 'Başlıksız Not') + ' (Kopya)',
+      content: noteContent.innerHTML,
+      category: noteCategory.value,
+      color: currentColor
+    })
+  });
+  const note = await res.json();
+  await loadNotes();
+  openNote(note.id);
+});
+
+// Yazı boyutu
+let fontSize = 16;
+const fontSizeVal = document.getElementById('fontSizeVal');
+
+document.getElementById('fontSizeInc').addEventListener('click', () => {
+  if (fontSize >= 48) return;
+  fontSize += 2;
+  fontSizeVal.textContent = fontSize;
+  noteContent.style.fontSize = fontSize + 'px';
+});
+
+document.getElementById('fontSizeDec').addEventListener('click', () => {
+  if (fontSize <= 10) return;
+  fontSize -= 2;
+  fontSizeVal.textContent = fontSize;
+  noteContent.style.fontSize = fontSize + 'px';
+});
+
+// Yazı tipi
+document.getElementById('fontFamily').addEventListener('change', (e) => {
+  noteContent.style.fontFamily = e.target.value;
+});
+
+// PDF
+document.getElementById('pdfBtn').addEventListener('click', () => {
+  if (!currentNoteId) return;
+  const title = noteTitle.value || 'Not';
+  const content = noteContent.innerHTML;
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>${title}</title>
+      <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 40px; font-size: 14px; line-height: 1.6; color: #111; }
+        h1 { font-size: 22px; margin-bottom: 16px; border-bottom: 2px solid #ccc; padding-bottom: 8px; }
+        h2 { font-size: 18px; }
+        hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+        @media print { body { padding: 20px; } }
+      </style>
+    </head>
+    <body>
+      <h1>${title}</h1>
+      ${content}
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
 });
 
 // Dışa aktar

@@ -230,20 +230,6 @@ body {
   border-bottom-color: var(--accent);
 }
 
-#deleteNoteBtn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 16px;
-  color: var(--delete);
-  transition: background 0.2s;
-}
-
-#deleteNoteBtn:hover {
-  background: #fee2e2;
-}
 
 /* META (kategori + renk) */
 .editor-meta {
@@ -309,6 +295,24 @@ body {
   flex: 1;
 }
 
+#fontSizeVal {
+  font-size: 13px;
+  color: var(--text);
+  min-width: 24px;
+  text-align: center;
+}
+
+#fontFamily {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+}
+
 .fmt-btn,
 #exportBtn {
   background: none;
@@ -353,6 +357,77 @@ body {
   pointer-events: none;
 }
 
+/* EKLER */
+.attachments-area {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.attachments-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#uploadBtn {
+  font-size: 13px;
+  color: var(--subtext);
+  cursor: pointer;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+#uploadBtn:hover {
+  background: var(--item-hover);
+  color: var(--text);
+}
+
+#attachmentList {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+#attachmentList li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--item-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+#attachmentList li a {
+  color: var(--text);
+  text-decoration: none;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#attachmentList li a:hover {
+  text-decoration: underline;
+}
+
+#attachmentList li .del-attachment {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--delete);
+  font-size: 12px;
+  padding: 0;
+  line-height: 1;
+}
+
 .editor-footer {
   display: flex;
   justify-content: space-between;
@@ -372,18 +447,43 @@ body {
   text-align: center;
 }
 
-#saveBtn {
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 24px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 0.2s;
+.footer-actions {
+  display: flex;
+  gap: 8px;
 }
 
-#saveBtn:hover {
+.footer-actions button {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.footer-actions button:hover {
+  background: var(--item-hover);
+}
+
+.footer-actions #deleteNoteBtn {
+  color: var(--delete);
+}
+
+.footer-actions #deleteNoteBtn:hover {
+  background: #fee2e2;
+}
+
+.footer-actions #saveBtn {
+  background: var(--accent);
+  color: white;
+  border-color: transparent;
+}
+
+.footer-actions #saveBtn:hover {
   background: var(--accent-hover);
 }
