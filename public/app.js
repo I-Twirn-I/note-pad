@@ -11,6 +11,18 @@ const saveStatus = document.getElementById('saveStatus');
 const searchInput = document.getElementById('searchInput');
 const categoryFilter = document.getElementById('categoryFilter');
 const wordCount = document.getElementById('wordCount');
+const editorPanel = document.getElementById('editorPanel');
+const noNoteMsg = document.getElementById('noNoteMsg');
+
+function showEditor() {
+  editorPanel.classList.remove('hidden');
+  noNoteMsg.style.display = 'none';
+}
+
+function hideEditor() {
+  editorPanel.classList.add('hidden');
+  noNoteMsg.style.display = 'flex';
+}
 
 // Notları yükle
 async function loadNotes() {
@@ -73,6 +85,7 @@ async function openNote(id) {
   updateWordCount();
   saveStatus.textContent = '';
   renderNoteList();
+  showEditor();
 }
 
 // Renk uygula (sadece seçili veya yeni yazılacak metne)
@@ -159,6 +172,7 @@ document.getElementById('deleteNoteBtn').addEventListener('click', async () => {
   currentColor = '';
   updateColorButtons();
   updateWordCount();
+  hideEditor();
   await loadNotes();
 });
 

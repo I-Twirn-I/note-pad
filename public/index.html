@@ -25,7 +25,9 @@
     <ul id="noteList"></ul>
   </div>
 
-  <div class="editor">
+  <div class="no-note-selected" id="noNoteMsg">Bir not seç veya yeni not oluştur</div>
+
+  <div class="editor hidden" id="editorPanel">
     <div class="editor-header">
       <input type="text" id="noteTitle" placeholder="Not başlığı..." />
       <button id="deleteNoteBtn" title="Notu sil">🗑️</button>
@@ -62,5 +64,6 @@
   </div>
 
   <script src="app.js"></script>
+
 </body>
 </html>

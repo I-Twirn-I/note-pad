@@ -194,6 +194,20 @@ body {
   gap: 10px;
 }
 
+.editor.hidden {
+  display: none;
+}
+
+.no-note-selected {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--editor-bg);
+  color: var(--subtext);
+  font-size: 15px;
+}
+
 .editor-header {
   display: flex;
   gap: 12px;
