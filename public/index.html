@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Not Defteri</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="light">
+
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Not Defteri</h1>
+      <button id="toggleTheme" title="Tema değiştir">🌙</button>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="Notlarda ara..." />
+    </div>
+    <button id="newNoteBtn">+ Yeni Not</button>
+    <ul id="noteList"></ul>
+  </div>
+
+  <div class="editor">
+    <div class="editor-header">
+      <input type="text" id="noteTitle" placeholder="Not başlığı..." />
+      <button id="deleteNoteBtn" title="Notu sil">🗑️</button>
+    </div>
+    <textarea id="noteContent" placeholder="Notunu buraya yaz..."></textarea>
+    <div class="editor-footer">
+      <span id="saveStatus"></span>
+      <button id="saveBtn">Kaydet</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

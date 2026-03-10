@@ -1,0 +1,250 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* LIGHT TEMA */
+body.light {
+  --bg: #f0f0f0;
+  --sidebar-bg: #e8e8e8;
+  --editor-bg: #ffffff;
+  --text: #1a1a1a;
+  --subtext: #666666;
+  --border: #cccccc;
+  --accent: #555555;
+  --accent-hover: #333333;
+  --item-hover: #dedede;
+  --item-active: #d0d0d0;
+  --input-bg: #f5f5f5;
+  --delete: #ef4444;
+}
+
+/* DARK TEMA */
+body.dark {
+  --bg: #121212;
+  --sidebar-bg: #1e1e1e;
+  --editor-bg: #242424;
+  --text: #e0e0e0;
+  --subtext: #888888;
+  --border: #333333;
+  --accent: #888888;
+  --accent-hover: #aaaaaa;
+  --item-hover: #2a2a2a;
+  --item-active: #333333;
+  --input-bg: #2a2a2a;
+  --delete: #ef4444;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 280px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-header h1 {
+  font-size: 18px;
+  color: var(--text);
+}
+
+#toggleTheme {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+
+.search-box input:focus {
+  border-color: var(--accent);
+}
+
+#newNoteBtn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+#newNoteBtn:hover {
+  background: var(--accent-hover);
+}
+
+#noteList {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#noteList li {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#noteList li:hover {
+  background: var(--item-hover);
+}
+
+#noteList li.active {
+  background: var(--item-active);
+}
+
+#noteList li .note-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#noteList li .note-date {
+  font-size: 12px;
+  color: var(--subtext);
+  margin-top: 2px;
+}
+
+/* EDITOR */
+.editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--editor-bg);
+  padding: 24px;
+  gap: 12px;
+}
+
+.editor-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+#noteTitle {
+  flex: 1;
+  font-size: 22px;
+  font-weight: 700;
+  border: none;
+  border-bottom: 2px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  padding: 4px 0;
+  outline: none;
+}
+
+#noteTitle:focus {
+  border-bottom-color: var(--accent);
+}
+
+#deleteNoteBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--delete);
+  transition: background 0.2s;
+}
+
+#deleteNoteBtn:hover {
+  background: #fee2e2;
+}
+
+#noteContent {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 15px;
+  line-height: 1.6;
+  background: var(--input-bg);
+  color: var(--text);
+  outline: none;
+}
+
+#noteContent:focus {
+  border-color: var(--accent);
+}
+
+.editor-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#saveStatus {
+  font-size: 13px;
+  color: var(--subtext);
+}
+
+#saveBtn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+#saveBtn:hover {
+  background: var(--accent-hover);
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--subtext);
+  font-size: 15px;
+}
