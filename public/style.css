@@ -335,6 +335,12 @@ body {
   border-color: var(--border);
 }
 
+.fmt-btn.active {
+  background: var(--item-active);
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
 #noteContent {
   flex: 1;
   overflow-y: auto;

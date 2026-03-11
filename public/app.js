@@ -34,6 +34,16 @@ function restoreSelection() {
   }
 }
 
+// Eğer noteContent'te zaten aktif bir seçim varsa onu koru, yoksa kayıtlı seçimi geri yükle
+function restoreSelectionIfNeeded() {
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0 && noteContent.contains(sel.anchorNode)) {
+    noteContent.focus();
+    return;
+  }
+  restoreSelection();
+}
+
 noteContent.addEventListener('mouseup', saveSelection);
 noteContent.addEventListener('keyup', saveSelection);
 noteContent.addEventListener('input', saveSelection);
@@ -138,6 +148,26 @@ function updateColorButtons() {
     btn.classList.toggle('active', btn.dataset.color === currentColor);
   });
 }
+
+// Toolbar butonlarının aktif/pasif görünümünü güncelle
+function updateToolbarState() {
+  try {
+    document.querySelectorAll('.fmt-btn[data-cmd]').forEach(btn => {
+      const cmd = btn.dataset.cmd;
+      if (cmd === 'bold') btn.classList.toggle('active', document.queryCommandState('bold'));
+      else if (cmd === 'italic') btn.classList.toggle('active', document.queryCommandState('italic'));
+      else if (cmd === 'heading') btn.classList.toggle('active', document.queryCommandValue('formatBlock').toLowerCase() === 'h2');
+      else if (cmd === 'ul') btn.classList.toggle('active', document.queryCommandState('insertUnorderedList'));
+      else if (cmd === 'ol') btn.classList.toggle('active', document.queryCommandState('insertOrderedList'));
+    });
+  } catch(e) {}
+}
+
+document.addEventListener('selectionchange', () => {
+  if (noteContent.contains(document.getSelection()?.anchorNode)) {
+    updateToolbarState();
+  }
+});
 
 // ── YENİ NOT ────────────────────────────────────────────────────
 document.getElementById('newNoteBtn').addEventListener('click', async () => {
@@ -255,17 +285,27 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const cmd = btn.dataset.cmd;
     if (!cmd) return;
-    restoreSelection();
 
     if (cmd === 'undo') {
       noteContent.focus();
       document.execCommand('undo');
+      updateWordCount();
+      updateToolbarState();
+      autoSave();
       return;
     } else if (cmd === 'redo') {
       noteContent.focus();
       document.execCommand('redo');
+      updateWordCount();
+      updateToolbarState();
+      autoSave();
       return;
-    } else if (cmd === 'bold') {
+    }
+
+    // Diğer komutlar: mevcut seçimi koru, yoksa kayıtlı seçimi geri yükle
+    restoreSelectionIfNeeded();
+
+    if (cmd === 'bold') {
       document.execCommand('bold');
     } else if (cmd === 'italic') {
       document.execCommand('italic');
@@ -274,28 +314,14 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
     } else if (cmd === 'ol') {
       document.execCommand('insertOrderedList');
     } else if (cmd === 'heading') {
-      // Toggle: h2 ise normale dön, değilse h2 yap
       const current = document.queryCommandValue('formatBlock');
       document.execCommand('formatBlock', false, current === 'h2' ? 'p' : 'h2');
     } else if (cmd === 'hr') {
-      // Manuel HR ekle
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount) {
-        const range = sel.getRangeAt(0);
-        range.deleteContents();
-        const hr = document.createElement('hr');
-        const br = document.createElement('br');
-        range.insertNode(br);
-        range.insertNode(hr);
-        const newRange = document.createRange();
-        newRange.setStartAfter(br);
-        newRange.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(newRange);
-      }
+      document.execCommand('insertHorizontalRule');
     }
 
     saveSelection();
+    updateToolbarState();
     autoSave();
     updateWordCount();
   });
