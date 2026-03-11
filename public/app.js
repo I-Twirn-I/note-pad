@@ -2,6 +2,7 @@ let notes = [];
 let currentNoteId = null;
 let saveTimeout = null;
 let currentColor = '';
+let savedRange = null;
 
 const noteList = document.getElementById('noteList');
 const noteTitle = document.getElementById('noteTitle');
@@ -14,20 +15,32 @@ const wordCount = document.getElementById('wordCount');
 const editorPanel = document.getElementById('editorPanel');
 const noNoteMsg = document.getElementById('noNoteMsg');
 
-function showEditor() {
-  editorPanel.classList.remove('hidden');
-  noNoteMsg.style.display = 'none';
-}
-
-function hideEditor() {
-  editorPanel.classList.add('hidden');
-  noNoteMsg.style.display = 'flex';
-}
-
 // ── SELECTION YÖNETİMİ ──────────────────────────────────────────
-// Toolbar butonlarına tıklanınca editör odağı kaybolmasın
+// Editördeki son cursor pozisyonunu kaydet
+function saveSelection() {
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0 && noteContent.contains(sel.anchorNode)) {
+    savedRange = sel.getRangeAt(0).cloneRange();
+  }
+}
+
+// Kaydedilen cursor'ı geri yükle
+function restoreSelection() {
+  noteContent.focus();
+  if (savedRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+}
+
+noteContent.addEventListener('mouseup', saveSelection);
+noteContent.addEventListener('keyup', saveSelection);
+noteContent.addEventListener('input', saveSelection);
+
+// Toolbar butonlarına tıklanınca editör odağı kaybolmasın (sadece butonlar için)
 document.querySelector('.toolbar').addEventListener('mousedown', e => {
-  if (e.target !== noteContent) e.preventDefault();
+  if (e.target.closest('button')) e.preventDefault();
 });
 document.querySelector('.editor-meta').addEventListener('mousedown', e => {
   if (e.target.closest('.color-btn')) e.preventDefault();
@@ -86,12 +99,22 @@ async function openNote(id) {
   noteContent.innerHTML = note.content || '';
   noteCategory.value = note.category || '';
   currentColor = note.color || '';
+  savedRange = null;
   updateColorButtons();
   updateWordCount();
   saveStatus.textContent = '';
   renderNoteList();
   showEditor();
-  loadAttachments();
+}
+
+function showEditor() {
+  editorPanel.classList.remove('hidden');
+  noNoteMsg.style.display = 'none';
+}
+
+function hideEditor() {
+  editorPanel.classList.add('hidden');
+  noNoteMsg.style.display = 'flex';
 }
 
 // ── RENK ────────────────────────────────────────────────────────
@@ -99,17 +122,13 @@ document.querySelectorAll('.color-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     currentColor = btn.dataset.color;
     updateColorButtons();
+    restoreSelection();
     if (currentColor) {
       document.execCommand('foreColor', false, currentColor);
     } else {
-      // Varsayılan renge dön: seçili metindeki renk stillerini kaldır
-      const sel = window.getSelection();
-      if (sel && !sel.isCollapsed) {
-        document.execCommand('removeFormat', false, null);
-      } else {
-        document.execCommand('foreColor', false, getComputedStyle(noteContent).color);
-      }
+      document.execCommand('removeFormat', false, null);
     }
+    saveSelection();
     autoSave();
   });
 });
@@ -179,6 +198,7 @@ document.getElementById('deleteNoteBtn').addEventListener('click', async () => {
   noteContent.innerHTML = '';
   noteCategory.value = '';
   currentColor = '';
+  savedRange = null;
   updateColorButtons();
   updateWordCount();
   hideEditor();
@@ -195,7 +215,7 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
         const img = document.createElement('img');
         img.src = ev.target.result;
         img.style.maxWidth = '100%';
-        noteContent.focus();
+        restoreSelection();
         const sel = window.getSelection();
         if (sel && sel.rangeCount) {
           const range = sel.getRangeAt(0);
@@ -213,7 +233,7 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
       reader.readAsDataURL(file);
     } else {
       reader.onload = (ev) => {
-        noteContent.focus();
+        restoreSelection();
         document.execCommand('insertText', false, ev.target.result);
         autoSave();
         updateWordCount();
@@ -235,14 +255,43 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const cmd = btn.dataset.cmd;
     if (!cmd) return;
-    if (cmd === 'undo') { document.execCommand('undo'); return; }
-    if (cmd === 'redo') { document.execCommand('redo'); return; }
-    if (cmd === 'bold') { document.execCommand('bold'); }
-    else if (cmd === 'italic') { document.execCommand('italic'); }
-    else if (cmd === 'ul') { document.execCommand('insertUnorderedList'); }
-    else if (cmd === 'ol') { document.execCommand('insertOrderedList'); }
-    else if (cmd === 'heading') { document.execCommand('formatBlock', false, 'h2'); }
-    else if (cmd === 'hr') { document.execCommand('insertHorizontalRule'); }
+    restoreSelection();
+
+    if (cmd === 'undo') {
+      document.execCommand('undo');
+    } else if (cmd === 'redo') {
+      document.execCommand('redo');
+    } else if (cmd === 'bold') {
+      document.execCommand('bold');
+    } else if (cmd === 'italic') {
+      document.execCommand('italic');
+    } else if (cmd === 'ul') {
+      document.execCommand('insertUnorderedList');
+    } else if (cmd === 'ol') {
+      document.execCommand('insertOrderedList');
+    } else if (cmd === 'heading') {
+      // Toggle: h2 ise normale dön, değilse h2 yap
+      const current = document.queryCommandValue('formatBlock');
+      document.execCommand('formatBlock', false, current === 'h2' ? 'p' : 'h2');
+    } else if (cmd === 'hr') {
+      // Manuel HR ekle
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        const hr = document.createElement('hr');
+        const br = document.createElement('br');
+        range.insertNode(br);
+        range.insertNode(hr);
+        const newRange = document.createRange();
+        newRange.setStartAfter(br);
+        newRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+      }
+    }
+
+    saveSelection();
     autoSave();
     updateWordCount();
   });
@@ -257,21 +306,21 @@ document.getElementById('duplicateBtn').addEventListener('click', async () => {
 });
 
 // ── YAZI BOYUTU ─────────────────────────────────────────────────
+document.getElementById('fontSizeSelect').addEventListener('focus', saveSelection);
 document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
   const size = e.target.value + 'px';
+  restoreSelection();
   const sel = window.getSelection();
   if (sel && !sel.isCollapsed) {
-    // Seçili metne uygula
     document.execCommand('fontSize', false, '7');
     noteContent.querySelectorAll('font[size="7"]').forEach(el => {
       el.removeAttribute('size');
       el.style.fontSize = size;
     });
   } else {
-    // İmleç konumuna yeni span ekle, sonraki yazı bu boyutta olsun
     const span = document.createElement('span');
     span.style.fontSize = size;
-    span.appendChild(document.createTextNode('\u200B')); // sıfır genişlikli boşluk
+    span.appendChild(document.createTextNode('\u200B'));
     if (sel && sel.rangeCount) {
       const range = sel.getRangeAt(0);
       range.deleteContents();
@@ -282,14 +331,16 @@ document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
       sel.addRange(range);
     }
   }
-  noteContent.focus();
+  saveSelection();
   autoSave();
 });
 
 // ── YAZI TİPİ ───────────────────────────────────────────────────
+document.getElementById('fontFamily').addEventListener('focus', saveSelection);
 document.getElementById('fontFamily').addEventListener('change', (e) => {
+  restoreSelection();
   document.execCommand('fontName', false, e.target.value);
-  noteContent.focus();
+  saveSelection();
   autoSave();
 });
 
