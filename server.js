@@ -7,12 +7,13 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'notpad-secret-key-2024';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) { console.error('JWT_SECRET environment variable eksik!'); process.exit(1); }
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dp3doruvr',
-  api_key: process.env.CLOUDINARY_API_KEY || 'CLOUDINARY_API_KEY_REMOVED',
-  api_secret: process.env.CLOUDINARY_API_SECRET || 'CLOUDINARY_API_SECRET_REMOVED',
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 const app = express();
