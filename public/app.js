@@ -2,6 +2,8 @@ let notes = [];
 let currentNoteId = null;
 let saveTimeout = null;
 let currentColor = '';
+let currentFontSize = '';
+let currentFontFamily = '';
 let savedRange = null;
 
 const noteList = document.getElementById('noteList');
@@ -134,19 +136,18 @@ document.querySelectorAll('.color-btn').forEach(btn => {
     updateColorButtons();
     restoreSelection();
     const sel = window.getSelection();
-    if (currentColor) {
-      if (sel && !sel.isCollapsed) {
-        // Seçili metin var → execCommand ile uygula
+    if (sel && !sel.isCollapsed) {
+      // Seçili metin var → execCommand ile uygula
+      if (currentColor) {
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, currentColor);
         document.execCommand('styleWithCSS', false, false);
       } else {
-        // Cursor konumunda → paylaşımlı span'a uygula
-        const span = getOrCreateFormattingSpan();
-        if (span) span.style.color = currentColor;
+        document.execCommand('removeFormat', false, null);
       }
     } else {
-      document.execCommand('removeFormat', false, null);
+      // Cursor konumunda → tüm format state'i ile span oluştur/güncelle
+      getOrCreateFormattingSpan();
     }
     saveSelection();
     autoSave();
@@ -180,7 +181,8 @@ document.addEventListener('selectionchange', () => {
 });
 
 // ── FORMAT SPAN YÖNETİMİ ─────────────────────────────────────────
-// Tüm format değişiklikleri (renk, boyut, font) aynı span'ı paylaşır — iç içe geçme olmaz
+// Kural: fmt span'lar asla iç içe girmez. Her format değişikliği aynı seviyede çalışır.
+// currentColor + currentFontSize + currentFontFamily üçü birlikte span'a uygulanır.
 function getOrCreateFormattingSpan() {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount || !sel.isCollapsed) return null;
@@ -189,33 +191,50 @@ function getOrCreateFormattingSpan() {
   let node = range.startContainer;
   if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
 
-  // Mevcut data-fmt span'ı ara (boşsa yeniden kullan)
+  // Ata zincirinde EN ÜST data-fmt span'ı bul (iç içe geçmeleri tespit etmek için)
+  let topmostFmt = null;
   let searchNode = node;
   while (searchNode && searchNode !== noteContent) {
     if (searchNode.nodeType === Node.ELEMENT_NODE &&
         searchNode.tagName === 'SPAN' &&
         searchNode.dataset.fmt) {
-      const realText = searchNode.textContent.replace(/\u200B/g, '');
-      if (realText === '') return searchNode; // Boş → stil güncelle
-      break; // Dolu → yeni span gerekiyor
+      topmostFmt = searchNode; // Her bulduğumuzda üste çık (en üst olanı bul)
     }
     searchNode = searchNode.parentNode;
   }
 
-  // Yeni data-fmt span'ı oluştur
-  const span = document.createElement('span');
-  span.dataset.fmt = '1';
-  span.appendChild(document.createTextNode('\u200B'));
+  let span;
+  if (topmostFmt && topmostFmt.textContent.replace(/\u200B/g, '') === '') {
+    span = topmostFmt; // Boş → aynı span'ı güncelle
+  } else if (topmostFmt) {
+    // Dolu → EN ÜST fmt span'ının SONRASINA ekle (iç içe değil, yan yana)
+    span = document.createElement('span');
+    span.dataset.fmt = '1';
+    span.appendChild(document.createTextNode('\u200B'));
+    topmostFmt.parentNode.insertBefore(span, topmostFmt.nextSibling);
+    const r = document.createRange();
+    r.setStart(span.firstChild, 1);
+    r.setEnd(span.firstChild, 1);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  } else {
+    // Hiç fmt span yok → cursor konumuna ekle
+    span = document.createElement('span');
+    span.dataset.fmt = '1';
+    span.appendChild(document.createTextNode('\u200B'));
+    const r = range.cloneRange();
+    r.insertNode(span);
+    const r2 = document.createRange();
+    r2.setStart(span.firstChild, 1);
+    r2.setEnd(span.firstChild, 1);
+    sel.removeAllRanges();
+    sel.addRange(r2);
+  }
 
-  const r = sel.getRangeAt(0).cloneRange();
-  r.insertNode(span);
-
-  const newRange = document.createRange();
-  newRange.setStart(span.firstChild, 1);
-  newRange.setEnd(span.firstChild, 1);
-  sel.removeAllRanges();
-  sel.addRange(newRange);
-
+  // Tüm mevcut format state'ini span'a uygula
+  span.style.fontSize = currentFontSize;
+  span.style.fontFamily = currentFontFamily;
+  span.style.color = currentColor;
   return span;
 }
 
@@ -389,6 +408,7 @@ document.getElementById('duplicateBtn').addEventListener('click', async () => {
 document.getElementById('fontSizeSelect').addEventListener('mousedown', saveSelection);
 document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
   const size = e.target.value + 'px';
+  currentFontSize = size;
   restoreSelection();
   const sel = window.getSelection();
   if (sel && !sel.isCollapsed) {
@@ -398,8 +418,7 @@ document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
       el.style.fontSize = size;
     });
   } else {
-    const span = getOrCreateFormattingSpan();
-    if (span) span.style.fontSize = size;
+    getOrCreateFormattingSpan();
   }
   saveSelection();
   autoSave();
@@ -409,6 +428,7 @@ document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
 document.getElementById('fontFamily').addEventListener('mousedown', saveSelection);
 document.getElementById('fontFamily').addEventListener('change', (e) => {
   const font = e.target.value;
+  currentFontFamily = font;
   restoreSelection();
   const sel = window.getSelection();
   if (sel && !sel.isCollapsed) {
@@ -416,8 +436,7 @@ document.getElementById('fontFamily').addEventListener('change', (e) => {
     document.execCommand('fontName', false, font);
     document.execCommand('styleWithCSS', false, false);
   } else {
-    const span = getOrCreateFormattingSpan();
-    if (span) span.style.fontFamily = font;
+    getOrCreateFormattingSpan();
   }
   saveSelection();
   autoSave();
