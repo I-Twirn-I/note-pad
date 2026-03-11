@@ -258,9 +258,13 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
     restoreSelection();
 
     if (cmd === 'undo') {
+      noteContent.focus();
       document.execCommand('undo');
+      return;
     } else if (cmd === 'redo') {
+      noteContent.focus();
       document.execCommand('redo');
+      return;
     } else if (cmd === 'bold') {
       document.execCommand('bold');
     } else if (cmd === 'italic') {
@@ -306,7 +310,7 @@ document.getElementById('duplicateBtn').addEventListener('click', async () => {
 });
 
 // ── YAZI BOYUTU ─────────────────────────────────────────────────
-document.getElementById('fontSizeSelect').addEventListener('focus', saveSelection);
+document.getElementById('fontSizeSelect').addEventListener('mousedown', saveSelection);
 document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
   const size = e.target.value + 'px';
   restoreSelection();
@@ -336,7 +340,7 @@ document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
 });
 
 // ── YAZI TİPİ ───────────────────────────────────────────────────
-document.getElementById('fontFamily').addEventListener('focus', saveSelection);
+document.getElementById('fontFamily').addEventListener('mousedown', saveSelection);
 document.getElementById('fontFamily').addEventListener('change', (e) => {
   restoreSelection();
   document.execCommand('fontName', false, e.target.value);

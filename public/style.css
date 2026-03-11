@@ -355,6 +355,15 @@ body {
   border-color: var(--accent);
 }
 
+#noteContent h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin: 4px 0;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2px;
+}
+
 #noteContent:empty:before {
   content: attr(data-placeholder);
   color: var(--subtext);
