@@ -600,4 +600,9 @@ function formatDate(dateStr) {
 }
 
 // ── BAŞLAT ───────────────────────────────────────────────────────
+noteContent.addEventListener('paste', (e) => {
+  e.preventDefault();
+  const text = e.clipboardData.getData('text/plain');
+  document.execCommand('insertText', false, text);
+});
 checkAuth();
