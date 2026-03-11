@@ -98,8 +98,8 @@ document.querySelectorAll('.color-btn').forEach(btn => {
     if (currentColor) {
       document.execCommand('foreColor', false, currentColor);
     } else {
-      document.execCommand('foreColor', false, 'inherit');
-      document.execCommand('removeFormat', false, null);
+      const defaultColor = getComputedStyle(document.body).getPropertyValue('--text').trim() || getComputedStyle(noteContent).color;
+      document.execCommand('foreColor', false, defaultColor);
     }
     autoSave();
   });
@@ -203,7 +203,7 @@ async function loadAttachments() {
   attachments.forEach(a => {
     const li = document.createElement('li');
     li.innerHTML = `
-      <a href="/uploads/${a.filename}" target="_blank" title="${escapeHtml(a.original_name)}">📎 ${escapeHtml(a.original_name)}</a>
+      <a href="${a.url}" target="_blank" title="${escapeHtml(a.original_name)}">📎 ${escapeHtml(a.original_name)}</a>
       <button class="del-attachment" data-id="${a.id}" title="Sil">✕</button>
     `;
     li.querySelector('.del-attachment').addEventListener('click', async () => {
@@ -246,22 +246,13 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
   });
 });
 
-// Notu kopyala
+// Yazıyı panoya kopyala
 document.getElementById('duplicateBtn').addEventListener('click', async () => {
   if (!currentNoteId) return;
-  const res = await fetch('/api/notes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      title: (noteTitle.value || 'Başlıksız Not') + ' (Kopya)',
-      content: noteContent.innerHTML,
-      category: noteCategory.value,
-      color: currentColor
-    })
-  });
-  const note = await res.json();
-  await loadNotes();
-  openNote(note.id);
+  const text = noteContent.innerText;
+  await navigator.clipboard.writeText(text);
+  saveStatus.textContent = 'Kopyalandı ✓';
+  setTimeout(() => saveStatus.textContent = '', 2000);
 });
 
 // Yazı boyutu - sadece seçili/yeni yazıya uygula
