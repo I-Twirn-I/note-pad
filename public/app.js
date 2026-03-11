@@ -133,10 +133,18 @@ document.querySelectorAll('.color-btn').forEach(btn => {
     currentColor = btn.dataset.color;
     updateColorButtons();
     restoreSelection();
+    const sel = window.getSelection();
     if (currentColor) {
-      document.execCommand('styleWithCSS', false, true);
-      document.execCommand('foreColor', false, currentColor);
-      document.execCommand('styleWithCSS', false, false);
+      if (sel && !sel.isCollapsed) {
+        // Seçili metin var → execCommand ile uygula
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('foreColor', false, currentColor);
+        document.execCommand('styleWithCSS', false, false);
+      } else {
+        // Cursor konumunda → paylaşımlı span'a uygula
+        const span = getOrCreateFormattingSpan();
+        if (span) span.style.color = currentColor;
+      }
     } else {
       document.execCommand('removeFormat', false, null);
     }
@@ -170,6 +178,46 @@ document.addEventListener('selectionchange', () => {
     updateToolbarState();
   }
 });
+
+// ── FORMAT SPAN YÖNETİMİ ─────────────────────────────────────────
+// Tüm format değişiklikleri (renk, boyut, font) aynı span'ı paylaşır — iç içe geçme olmaz
+function getOrCreateFormattingSpan() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !sel.isCollapsed) return null;
+
+  const range = sel.getRangeAt(0);
+  let node = range.startContainer;
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+
+  // Mevcut data-fmt span'ı ara (boşsa yeniden kullan)
+  let searchNode = node;
+  while (searchNode && searchNode !== noteContent) {
+    if (searchNode.nodeType === Node.ELEMENT_NODE &&
+        searchNode.tagName === 'SPAN' &&
+        searchNode.dataset.fmt) {
+      const realText = searchNode.textContent.replace(/\u200B/g, '');
+      if (realText === '') return searchNode; // Boş → stil güncelle
+      break; // Dolu → yeni span gerekiyor
+    }
+    searchNode = searchNode.parentNode;
+  }
+
+  // Yeni data-fmt span'ı oluştur
+  const span = document.createElement('span');
+  span.dataset.fmt = '1';
+  span.appendChild(document.createTextNode('\u200B'));
+
+  const r = sel.getRangeAt(0).cloneRange();
+  r.insertNode(span);
+
+  const newRange = document.createRange();
+  newRange.setStart(span.firstChild, 1);
+  newRange.setEnd(span.firstChild, 1);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+
+  return span;
+}
 
 // ── YENİ NOT ────────────────────────────────────────────────────
 document.getElementById('newNoteBtn').addEventListener('click', async () => {
@@ -350,18 +398,8 @@ document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
       el.style.fontSize = size;
     });
   } else {
-    const span = document.createElement('span');
-    span.style.fontSize = size;
-    span.appendChild(document.createTextNode('\u200B'));
-    if (sel && sel.rangeCount) {
-      const range = sel.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(span);
-      range.setStart(span, 1);
-      range.setEnd(span, 1);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
+    const span = getOrCreateFormattingSpan();
+    if (span) span.style.fontSize = size;
   }
   saveSelection();
   autoSave();
@@ -374,28 +412,12 @@ document.getElementById('fontFamily').addEventListener('change', (e) => {
   restoreSelection();
   const sel = window.getSelection();
   if (sel && !sel.isCollapsed) {
-    // Seçili metne uygula
-    noteContent.querySelectorAll('font[face]').forEach(el => {
-      el.style.fontFamily = font;
-      el.removeAttribute('face');
-    });
     document.execCommand('styleWithCSS', false, true);
     document.execCommand('fontName', false, font);
     document.execCommand('styleWithCSS', false, false);
   } else {
-    // Cursor konumuna span ekle, bundan sonra yazılan bu fontla olsun
-    const span = document.createElement('span');
-    span.style.fontFamily = font;
-    span.appendChild(document.createTextNode('\u200B'));
-    if (sel && sel.rangeCount) {
-      const range = sel.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(span);
-      range.setStart(span, 1);
-      range.setEnd(span, 1);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
+    const span = getOrCreateFormattingSpan();
+    if (span) span.style.fontFamily = font;
   }
   saveSelection();
   autoSave();
