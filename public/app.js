@@ -402,6 +402,9 @@ document.getElementById('duplicateBtn').addEventListener('click', async () => {
   await navigator.clipboard.writeText(noteContent.innerText);
   saveStatus.textContent = 'Kopyalandı ✓';
   setTimeout(() => saveStatus.textContent = '', 2000);
+  const toast = document.getElementById('copyToast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
 });
 
 // ── YAZI BOYUTU ─────────────────────────────────────────────────

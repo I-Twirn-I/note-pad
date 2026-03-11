@@ -506,3 +506,22 @@ body {
 .footer-actions #saveBtn:hover {
   background: var(--accent-hover);
 }
+
+#copyToast {
+  position: fixed;
+  bottom: 60px;
+  right: 24px;
+  background: #333;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 9999;
+}
+
+#copyToast.show {
+  opacity: 1;
+}
