@@ -134,7 +134,9 @@ document.querySelectorAll('.color-btn').forEach(btn => {
     updateColorButtons();
     restoreSelection();
     if (currentColor) {
+      document.execCommand('styleWithCSS', false, true);
       document.execCommand('foreColor', false, currentColor);
+      document.execCommand('styleWithCSS', false, false);
     } else {
       document.execCommand('removeFormat', false, null);
     }
@@ -368,8 +370,33 @@ document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
 // ── YAZI TİPİ ───────────────────────────────────────────────────
 document.getElementById('fontFamily').addEventListener('mousedown', saveSelection);
 document.getElementById('fontFamily').addEventListener('change', (e) => {
+  const font = e.target.value;
   restoreSelection();
-  document.execCommand('fontName', false, e.target.value);
+  const sel = window.getSelection();
+  if (sel && !sel.isCollapsed) {
+    // Seçili metne uygula
+    noteContent.querySelectorAll('font[face]').forEach(el => {
+      el.style.fontFamily = font;
+      el.removeAttribute('face');
+    });
+    document.execCommand('styleWithCSS', false, true);
+    document.execCommand('fontName', false, font);
+    document.execCommand('styleWithCSS', false, false);
+  } else {
+    // Cursor konumuna span ekle, bundan sonra yazılan bu fontla olsun
+    const span = document.createElement('span');
+    span.style.fontFamily = font;
+    span.appendChild(document.createTextNode('\u200B'));
+    if (sel && sel.rangeCount) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(span);
+      range.setStart(span, 1);
+      range.setEnd(span, 1);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  }
   saveSelection();
   autoSave();
 });
