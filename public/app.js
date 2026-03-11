@@ -98,6 +98,7 @@ document.querySelectorAll('.color-btn').forEach(btn => {
     if (currentColor) {
       document.execCommand('foreColor', false, currentColor);
     } else {
+      document.execCommand('foreColor', false, 'inherit');
       document.execCommand('removeFormat', false, null);
     }
     autoSave();
