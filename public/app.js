@@ -24,7 +24,16 @@ function hideEditor() {
   noNoteMsg.style.display = 'flex';
 }
 
-// Notları yükle
+// ── SELECTION YÖNETİMİ ──────────────────────────────────────────
+// Toolbar butonlarına tıklanınca editör odağı kaybolmasın
+document.querySelector('.toolbar').addEventListener('mousedown', e => {
+  if (e.target !== noteContent) e.preventDefault();
+});
+document.querySelector('.editor-meta').addEventListener('mousedown', e => {
+  if (e.target.closest('.color-btn')) e.preventDefault();
+});
+
+// ── NOTLAR ──────────────────────────────────────────────────────
 async function loadNotes() {
   const search = searchInput.value;
   const category = categoryFilter.value;
@@ -34,7 +43,6 @@ async function loadNotes() {
   loadCategories();
 }
 
-// Kategorileri yükle
 async function loadCategories() {
   const res = await fetch('/api/categories');
   const cats = await res.json();
@@ -49,7 +57,6 @@ async function loadCategories() {
   });
 }
 
-// Listeyi render et
 function renderNoteList() {
   noteList.innerHTML = '';
   if (notes.length === 0) {
@@ -59,7 +66,6 @@ function renderNoteList() {
   notes.forEach(note => {
     const li = document.createElement('li');
     if (note.id === currentNoteId) li.classList.add('active');
-
     li.innerHTML = `
       <div class="note-title">${escapeHtml(note.title || 'Başlıksız Not')}</div>
       <div class="note-meta">
@@ -72,7 +78,6 @@ function renderNoteList() {
   });
 }
 
-// Not aç
 async function openNote(id) {
   currentNoteId = id;
   const res = await fetch(`/api/notes/${id}`);
@@ -89,17 +94,21 @@ async function openNote(id) {
   loadAttachments();
 }
 
-// Renk uygula (sadece seçili veya yeni yazılacak metne)
+// ── RENK ────────────────────────────────────────────────────────
 document.querySelectorAll('.color-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     currentColor = btn.dataset.color;
     updateColorButtons();
-    noteContent.focus();
     if (currentColor) {
       document.execCommand('foreColor', false, currentColor);
     } else {
-      const defaultColor = getComputedStyle(document.body).getPropertyValue('--text').trim() || getComputedStyle(noteContent).color;
-      document.execCommand('foreColor', false, defaultColor);
+      // Varsayılan renge dön: seçili metindeki renk stillerini kaldır
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed) {
+        document.execCommand('removeFormat', false, null);
+      } else {
+        document.execCommand('foreColor', false, getComputedStyle(noteContent).color);
+      }
     }
     autoSave();
   });
@@ -111,7 +120,7 @@ function updateColorButtons() {
   });
 }
 
-// Yeni not
+// ── YENİ NOT ────────────────────────────────────────────────────
 document.getElementById('newNoteBtn').addEventListener('click', async () => {
   const res = await fetch('/api/notes', {
     method: 'POST',
@@ -123,7 +132,7 @@ document.getElementById('newNoteBtn').addEventListener('click', async () => {
   openNote(note.id);
 });
 
-// Kaydet
+// ── KAYDET ──────────────────────────────────────────────────────
 document.getElementById('saveBtn').addEventListener('click', saveCurrentNote);
 
 async function saveCurrentNote() {
@@ -143,7 +152,6 @@ async function saveCurrentNote() {
   await loadNotes();
 }
 
-// Otomatik kaydet
 function autoSave() {
   clearTimeout(saveTimeout);
   saveStatus.textContent = 'Kaydediliyor...';
@@ -154,7 +162,6 @@ noteTitle.addEventListener('input', autoSave);
 noteContent.addEventListener('input', () => { autoSave(); updateWordCount(); });
 noteCategory.addEventListener('input', autoSave);
 
-// Kelime sayacı
 function updateWordCount() {
   const text = noteContent.innerText.trim();
   const words = text ? text.split(/\s+/).length : 0;
@@ -162,7 +169,7 @@ function updateWordCount() {
   wordCount.textContent = `${words} kelime · ${chars} karakter`;
 }
 
-// Not sil
+// ── NOT SİL ─────────────────────────────────────────────────────
 document.getElementById('deleteNoteBtn').addEventListener('click', async () => {
   if (!currentNoteId) return;
   if (!confirm('Bu notu silmek istediğine emin misin?')) return;
@@ -178,163 +185,143 @@ document.getElementById('deleteNoteBtn').addEventListener('click', async () => {
   await loadNotes();
 });
 
-// Dosya yükleme
-document.getElementById('fileInput').addEventListener('change', async (e) => {
+// ── DOSYA YÜKLEME ───────────────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', (e) => {
   if (!currentNoteId) return;
-  const files = Array.from(e.target.files);
-  for (const file of files) {
-    const formData = new FormData();
-    formData.append('file', file);
-    await fetch(`/api/notes/${currentNoteId}/attachments`, {
-      method: 'POST',
-      body: formData
-    });
-  }
+  Array.from(e.target.files).forEach(file => {
+    const reader = new FileReader();
+    if (file.type.startsWith('image/')) {
+      reader.onload = (ev) => {
+        const img = document.createElement('img');
+        img.src = ev.target.result;
+        img.style.maxWidth = '100%';
+        noteContent.focus();
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount) {
+          const range = sel.getRangeAt(0);
+          range.collapse(false);
+          range.insertNode(img);
+          range.setStartAfter(img);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } else {
+          noteContent.appendChild(img);
+        }
+        autoSave();
+        updateWordCount();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = (ev) => {
+        noteContent.focus();
+        document.execCommand('insertText', false, ev.target.result);
+        autoSave();
+        updateWordCount();
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+  });
   e.target.value = '';
-  loadAttachments();
 });
 
-async function loadAttachments() {
-  if (!currentNoteId) return;
-  const res = await fetch(`/api/notes/${currentNoteId}/attachments`);
-  const attachments = await res.json();
-  const list = document.getElementById('attachmentList');
-  list.innerHTML = '';
-  attachments.forEach(a => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <a href="${a.url}" target="_blank" title="${escapeHtml(a.original_name)}">📎 ${escapeHtml(a.original_name)}</a>
-      <button class="del-attachment" data-id="${a.id}" title="Sil">✕</button>
-    `;
-    li.querySelector('.del-attachment').addEventListener('click', async () => {
-      await fetch(`/api/attachments/${a.id}`, { method: 'DELETE' });
-      loadAttachments();
-    });
-    list.appendChild(li);
-  });
-}
+function loadAttachments() {}
 
-// Arama & kategori filtresi
+// ── ARAMA & FİLTRE ──────────────────────────────────────────────
 searchInput.addEventListener('input', loadNotes);
 categoryFilter.addEventListener('change', loadNotes);
 
-// Biçimlendirme toolbar
+// ── BİÇİMLENDİRME TOOLBAR ───────────────────────────────────────
 document.querySelectorAll('.fmt-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const cmd = btn.dataset.cmd;
-    noteContent.focus();
-
-    if (cmd === 'undo') {
-      document.execCommand('undo');
-    } else if (cmd === 'redo') {
-      document.execCommand('redo');
-    } else if (cmd === 'bold') {
-      document.execCommand('bold');
-    } else if (cmd === 'italic') {
-      document.execCommand('italic');
-    } else if (cmd === 'ul') {
-      document.execCommand('insertUnorderedList');
-    } else if (cmd === 'ol') {
-      document.execCommand('insertOrderedList');
-    } else if (cmd === 'heading') {
-      document.execCommand('formatBlock', false, 'h2');
-    } else if (cmd === 'hr') {
-      document.execCommand('insertHorizontalRule');
-    }
+    if (!cmd) return;
+    if (cmd === 'undo') { document.execCommand('undo'); return; }
+    if (cmd === 'redo') { document.execCommand('redo'); return; }
+    if (cmd === 'bold') { document.execCommand('bold'); }
+    else if (cmd === 'italic') { document.execCommand('italic'); }
+    else if (cmd === 'ul') { document.execCommand('insertUnorderedList'); }
+    else if (cmd === 'ol') { document.execCommand('insertOrderedList'); }
+    else if (cmd === 'heading') { document.execCommand('formatBlock', false, 'h2'); }
+    else if (cmd === 'hr') { document.execCommand('insertHorizontalRule'); }
     autoSave();
     updateWordCount();
   });
 });
 
-// Yazıyı panoya kopyala
+// ── KOPYALA ─────────────────────────────────────────────────────
 document.getElementById('duplicateBtn').addEventListener('click', async () => {
   if (!currentNoteId) return;
-  const text = noteContent.innerText;
-  await navigator.clipboard.writeText(text);
+  await navigator.clipboard.writeText(noteContent.innerText);
   saveStatus.textContent = 'Kopyalandı ✓';
   setTimeout(() => saveStatus.textContent = '', 2000);
 });
 
-// Yazı boyutu - sadece seçili/yeni yazıya uygula
+// ── YAZI BOYUTU ─────────────────────────────────────────────────
 document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
   const size = e.target.value + 'px';
-  noteContent.focus();
   const sel = window.getSelection();
   if (sel && !sel.isCollapsed) {
+    // Seçili metne uygula
     document.execCommand('fontSize', false, '7');
-    const spans = noteContent.querySelectorAll('font[size="7"]');
-    spans.forEach(span => {
-      span.removeAttribute('size');
-      span.style.fontSize = size;
+    noteContent.querySelectorAll('font[size="7"]').forEach(el => {
+      el.removeAttribute('size');
+      el.style.fontSize = size;
     });
   } else {
+    // İmleç konumuna yeni span ekle, sonraki yazı bu boyutta olsun
     const span = document.createElement('span');
     span.style.fontSize = size;
-    span.appendChild(document.createTextNode('\u200B'));
-    const range = sel.getRangeAt(0);
-    range.insertNode(span);
-    range.setStartAfter(span.lastChild);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
+    span.appendChild(document.createTextNode('\u200B')); // sıfır genişlikli boşluk
+    if (sel && sel.rangeCount) {
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(span);
+      range.setStart(span, 1);
+      range.setEnd(span, 1);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
   }
-  autoSave();
-});
-
-// Yazı tipi - sadece seçili/yeni yazıya uygula
-document.getElementById('fontFamily').addEventListener('change', (e) => {
-  const font = e.target.value;
   noteContent.focus();
-  document.execCommand('fontName', false, font);
   autoSave();
 });
 
-// PDF
+// ── YAZI TİPİ ───────────────────────────────────────────────────
+document.getElementById('fontFamily').addEventListener('change', (e) => {
+  document.execCommand('fontName', false, e.target.value);
+  noteContent.focus();
+  autoSave();
+});
+
+// ── PDF ─────────────────────────────────────────────────────────
 document.getElementById('pdfBtn').addEventListener('click', () => {
   if (!currentNoteId) return;
   const title = noteTitle.value || 'Not';
-  const content = noteContent.innerHTML;
   const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <title>${title}</title>
-      <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 40px; font-size: 14px; line-height: 1.6; color: #111; }
-        h1 { font-size: 22px; margin-bottom: 16px; border-bottom: 2px solid #ccc; padding-bottom: 8px; }
-        h2 { font-size: 18px; }
-        hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
-        @media print { body { padding: 20px; } }
-      </style>
-    </head>
-    <body>
-      <h1>${title}</h1>
-      ${content}
-    </body>
-    </html>
-  `);
+  printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+    <style>body{font-family:'Segoe UI',sans-serif;padding:40px;font-size:14px;line-height:1.6;color:#111}
+    h1{font-size:22px;margin-bottom:16px;border-bottom:2px solid #ccc;padding-bottom:8px}
+    h2{font-size:18px}hr{border:none;border-top:1px solid #ccc;margin:16px 0}
+    img{max-width:100%}@media print{body{padding:20px}}</style>
+    </head><body><h1>${title}</h1>${noteContent.innerHTML}</body></html>`);
   printWindow.document.close();
   printWindow.focus();
   setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
 });
 
-// Dışa aktar
+// ── DIŞA AKTAR ──────────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click', () => {
   if (!currentNoteId) return;
-  const title = noteTitle.value || 'not';
-  const content = noteContent.innerText;
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const blob = new Blob([noteContent.innerText], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${title}.txt`;
+  a.download = `${noteTitle.value || 'not'}.txt`;
   a.click();
   URL.revokeObjectURL(url);
 });
 
-// Tema
+// ── TEMA ────────────────────────────────────────────────────────
 const toggleTheme = document.getElementById('toggleTheme');
 const savedTheme = localStorage.getItem('theme') || 'light';
 document.body.className = savedTheme;
@@ -347,7 +334,7 @@ toggleTheme.addEventListener('click', () => {
   localStorage.setItem('theme', isDark ? 'light' : 'dark');
 });
 
-// Yardımcılar
+// ── YARDIMCILAR ─────────────────────────────────────────────────
 function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -357,5 +344,4 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' });
 }
 
-// Başlat
 loadNotes();
