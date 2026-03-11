@@ -295,13 +295,8 @@ body {
   flex: 1;
 }
 
-#fontSizeVal {
-  font-size: 13px;
-  color: var(--text);
-  min-width: 24px;
-  text-align: center;
-}
-
+#fontSizeSelect,
+#fontSizeSelect,
 #fontFamily {
   background: var(--toolbar-bg);
   border: 1px solid var(--border);
@@ -313,27 +308,12 @@ body {
   outline: none;
 }
 
-#fontSizeVal {
-  cursor: pointer;
-  border-radius: 4px;
-  padding: 1px 4px;
-}
-
-#fontSizeVal:hover {
-  background: var(--item-hover);
-}
-
-#fontSizeInput {
-  width: 36px;
-  text-align: center;
-  border: 1px solid var(--accent);
-  border-radius: 4px;
-  background: var(--input-bg);
+#fontSizeSelect option,
+#fontFamily option {
+  background: var(--sidebar-bg);
   color: var(--text);
-  font-size: 13px;
-  padding: 1px 4px;
-  outline: none;
 }
+
 
 .fmt-btn,
 #exportBtn {

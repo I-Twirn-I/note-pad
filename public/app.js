@@ -263,48 +263,37 @@ document.getElementById('duplicateBtn').addEventListener('click', async () => {
   openNote(note.id);
 });
 
-// Yazı boyutu
-let fontSize = 16;
-const fontSizeVal = document.getElementById('fontSizeVal');
-
-function applyFontSize(size) {
-  fontSize = Math.min(48, Math.max(10, size));
-  fontSizeVal.textContent = fontSize;
-  noteContent.style.fontSize = fontSize + 'px';
-  autoSave();
-}
-
-document.getElementById('fontSizeInc').addEventListener('click', () => applyFontSize(fontSize + 2));
-document.getElementById('fontSizeDec').addEventListener('click', () => applyFontSize(fontSize - 2));
-
-// Sayıya tıklayınca input aç
-fontSizeVal.addEventListener('click', () => {
-  const input = document.createElement('input');
-  input.type = 'number';
-  input.id = 'fontSizeInput';
-  input.value = fontSize;
-  input.min = 10;
-  input.max = 48;
-  fontSizeVal.replaceWith(input);
-  input.focus();
-  input.select();
-
-  function confirm() {
-    const val = parseInt(input.value);
-    input.replaceWith(fontSizeVal);
-    if (!isNaN(val)) applyFontSize(val);
+// Yazı boyutu - sadece seçili/yeni yazıya uygula
+document.getElementById('fontSizeSelect').addEventListener('change', (e) => {
+  const size = e.target.value + 'px';
+  noteContent.focus();
+  const sel = window.getSelection();
+  if (sel && !sel.isCollapsed) {
+    document.execCommand('fontSize', false, '7');
+    const spans = noteContent.querySelectorAll('font[size="7"]');
+    spans.forEach(span => {
+      span.removeAttribute('size');
+      span.style.fontSize = size;
+    });
+  } else {
+    const span = document.createElement('span');
+    span.style.fontSize = size;
+    span.appendChild(document.createTextNode('\u200B'));
+    const range = sel.getRangeAt(0);
+    range.insertNode(span);
+    range.setStartAfter(span.lastChild);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
   }
-
-  input.addEventListener('blur', confirm);
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') confirm();
-    if (e.key === 'Escape') { input.replaceWith(fontSizeVal); }
-  });
+  autoSave();
 });
 
-// Yazı tipi
+// Yazı tipi - sadece seçili/yeni yazıya uygula
 document.getElementById('fontFamily').addEventListener('change', (e) => {
-  noteContent.style.fontFamily = e.target.value;
+  const font = e.target.value;
+  noteContent.focus();
+  document.execCommand('fontName', false, font);
   autoSave();
 });
 
