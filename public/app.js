@@ -5,6 +5,7 @@ let currentColor = '';
 let currentFontSize = '';
 let currentFontFamily = '';
 let savedRange = null;
+let authToken = localStorage.getItem('authToken') || null;
 
 const noteList = document.getElementById('noteList');
 const noteTitle = document.getElementById('noteTitle');
@@ -16,9 +17,114 @@ const categoryFilter = document.getElementById('categoryFilter');
 const wordCount = document.getElementById('wordCount');
 const editorPanel = document.getElementById('editorPanel');
 const noNoteMsg = document.getElementById('noNoteMsg');
+const authOverlay = document.getElementById('authOverlay');
+
+// ── AUTH ─────────────────────────────────────────────────────────
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` };
+}
+
+function showAuthOverlay() {
+  authOverlay.style.display = 'flex';
+}
+
+function hideAuthOverlay() {
+  authOverlay.style.display = 'none';
+}
+
+async function checkAuth() {
+  if (!authToken) { showAuthOverlay(); return; }
+  try {
+    const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${authToken}` } });
+    if (!res.ok) { authToken = null; localStorage.removeItem('authToken'); showAuthOverlay(); return; }
+    const user = await res.json();
+    document.getElementById('userNameDisplay').textContent = user.username;
+    hideAuthOverlay();
+    loadNotes();
+  } catch(e) {
+    showAuthOverlay();
+  }
+}
+
+let isRegisterMode = false;
+
+document.getElementById('authToggle').addEventListener('click', () => {
+  isRegisterMode = !isRegisterMode;
+  document.getElementById('authTitle').textContent = isRegisterMode ? 'Yeni Hesap Oluştur' : 'Not Defterine Giriş Yap';
+  document.getElementById('authSubmit').textContent = isRegisterMode ? 'Kayıt Ol' : 'Giriş Yap';
+  document.getElementById('authToggle').textContent = isRegisterMode ? 'Zaten hesabın var mı? Giriş yap' : 'Hesabın yok mu? Kayıt ol';
+  document.getElementById('registerFields').style.display = isRegisterMode ? 'block' : 'none';
+  document.getElementById('authError').textContent = '';
+});
+
+document.getElementById('authSubmit').addEventListener('click', async () => {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errorEl = document.getElementById('authError');
+  errorEl.textContent = '';
+
+  if (!email || !password) { errorEl.textContent = 'Lütfen tüm alanları doldurun'; return; }
+
+  try {
+    if (isRegisterMode) {
+      const username = document.getElementById('authUsername').value.trim();
+      if (!username) { errorEl.textContent = 'Kullanıcı adı gerekli'; return; }
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { errorEl.textContent = data.error; return; }
+      authToken = data.token;
+      localStorage.setItem('authToken', authToken);
+      document.getElementById('userNameDisplay').textContent = data.username;
+      hideAuthOverlay();
+      loadNotes();
+    } else {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { errorEl.textContent = data.error; return; }
+      authToken = data.token;
+      localStorage.setItem('authToken', authToken);
+      document.getElementById('userNameDisplay').textContent = data.username;
+      hideAuthOverlay();
+      loadNotes();
+    }
+  } catch(e) {
+    errorEl.textContent = 'Bir hata oluştu, tekrar deneyin';
+  }
+});
+
+// Enter tuşu ile form gönder
+['authEmail', 'authPassword', 'authUsername'].forEach(id => {
+  document.getElementById(id)?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('authSubmit').click();
+  });
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  authToken = null;
+  localStorage.removeItem('authToken');
+  currentNoteId = null;
+  notes = [];
+  noteList.innerHTML = '';
+  noteTitle.value = '';
+  noteContent.innerHTML = '';
+  noteCategory.value = '';
+  hideEditor();
+  document.getElementById('userNameDisplay').textContent = '';
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPassword').value = '';
+  if (document.getElementById('authUsername')) document.getElementById('authUsername').value = '';
+  showAuthOverlay();
+});
 
 // ── SELECTION YÖNETİMİ ──────────────────────────────────────────
-// Editördeki son cursor pozisyonunu kaydet
 function saveSelection() {
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0 && noteContent.contains(sel.anchorNode)) {
@@ -26,7 +132,6 @@ function saveSelection() {
   }
 }
 
-// Kaydedilen cursor'ı geri yükle
 function restoreSelection() {
   noteContent.focus();
   if (savedRange) {
@@ -36,7 +141,6 @@ function restoreSelection() {
   }
 }
 
-// Eğer noteContent'te zaten aktif bir seçim varsa onu koru, yoksa kayıtlı seçimi geri yükle
 function restoreSelectionIfNeeded() {
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0 && noteContent.contains(sel.anchorNode)) {
@@ -50,7 +154,6 @@ noteContent.addEventListener('mouseup', saveSelection);
 noteContent.addEventListener('keyup', saveSelection);
 noteContent.addEventListener('input', saveSelection);
 
-// Toolbar butonlarına tıklanınca editör odağı kaybolmasın (sadece butonlar için)
 document.querySelector('.toolbar').addEventListener('mousedown', e => {
   if (e.target.closest('button')) e.preventDefault();
 });
@@ -62,14 +165,18 @@ document.querySelector('.editor-meta').addEventListener('mousedown', e => {
 async function loadNotes() {
   const search = searchInput.value;
   const category = categoryFilter.value;
-  const res = await fetch(`/api/notes?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`);
+  const res = await fetch(`/api/notes?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`, {
+    headers: { 'Authorization': `Bearer ${authToken}` }
+  });
+  if (res.status === 401) { showAuthOverlay(); return; }
   notes = await res.json();
   renderNoteList();
   loadCategories();
 }
 
 async function loadCategories() {
-  const res = await fetch('/api/categories');
+  const res = await fetch('/api/categories', { headers: { 'Authorization': `Bearer ${authToken}` } });
+  if (res.status === 401) return;
   const cats = await res.json();
   const current = categoryFilter.value;
   categoryFilter.innerHTML = '<option value="">Tüm kategoriler</option>';
@@ -105,7 +212,8 @@ function renderNoteList() {
 
 async function openNote(id) {
   currentNoteId = id;
-  const res = await fetch(`/api/notes/${id}`);
+  const res = await fetch(`/api/notes/${id}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+  if (res.status === 401) { showAuthOverlay(); return; }
   const note = await res.json();
   noteTitle.value = note.title || '';
   noteContent.innerHTML = note.content || '';
@@ -137,7 +245,6 @@ document.querySelectorAll('.color-btn').forEach(btn => {
     restoreSelection();
     const sel = window.getSelection();
     if (sel && !sel.isCollapsed) {
-      // Seçili metin var → execCommand ile uygula
       if (currentColor) {
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, currentColor);
@@ -146,7 +253,6 @@ document.querySelectorAll('.color-btn').forEach(btn => {
         document.execCommand('removeFormat', false, null);
       }
     } else {
-      // Cursor konumunda → tüm format state'i ile span oluştur/güncelle
       getOrCreateFormattingSpan();
     }
     saveSelection();
@@ -160,7 +266,6 @@ function updateColorButtons() {
   });
 }
 
-// Toolbar butonlarının aktif/pasif görünümünü güncelle
 function updateToolbarState() {
   try {
     document.querySelectorAll('.fmt-btn[data-cmd]').forEach(btn => {
@@ -181,8 +286,6 @@ document.addEventListener('selectionchange', () => {
 });
 
 // ── FORMAT SPAN YÖNETİMİ ─────────────────────────────────────────
-// Kural: fmt span'lar asla iç içe girmez. Her format değişikliği aynı seviyede çalışır.
-// currentColor + currentFontSize + currentFontFamily üçü birlikte span'a uygulanır.
 function getOrCreateFormattingSpan() {
   const sel = window.getSelection();
   if (!sel || !sel.rangeCount || !sel.isCollapsed) return null;
@@ -191,23 +294,21 @@ function getOrCreateFormattingSpan() {
   let node = range.startContainer;
   if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
 
-  // Ata zincirinde EN ÜST data-fmt span'ı bul (iç içe geçmeleri tespit etmek için)
   let topmostFmt = null;
   let searchNode = node;
   while (searchNode && searchNode !== noteContent) {
     if (searchNode.nodeType === Node.ELEMENT_NODE &&
         searchNode.tagName === 'SPAN' &&
         searchNode.dataset.fmt) {
-      topmostFmt = searchNode; // Her bulduğumuzda üste çık (en üst olanı bul)
+      topmostFmt = searchNode;
     }
     searchNode = searchNode.parentNode;
   }
 
   let span;
   if (topmostFmt && topmostFmt.textContent.replace(/\u200B/g, '') === '') {
-    span = topmostFmt; // Boş → aynı span'ı güncelle
+    span = topmostFmt;
   } else if (topmostFmt) {
-    // Dolu → EN ÜST fmt span'ının SONRASINA ekle (iç içe değil, yan yana)
     span = document.createElement('span');
     span.dataset.fmt = '1';
     span.appendChild(document.createTextNode('\u200B'));
@@ -218,7 +319,6 @@ function getOrCreateFormattingSpan() {
     sel.removeAllRanges();
     sel.addRange(r);
   } else {
-    // Hiç fmt span yok → cursor konumuna ekle
     span = document.createElement('span');
     span.dataset.fmt = '1';
     span.appendChild(document.createTextNode('\u200B'));
@@ -231,7 +331,6 @@ function getOrCreateFormattingSpan() {
     sel.addRange(r2);
   }
 
-  // Tüm mevcut format state'ini span'a uygula
   span.style.fontSize = currentFontSize;
   span.style.fontFamily = currentFontFamily;
   span.style.color = currentColor;
@@ -242,9 +341,10 @@ function getOrCreateFormattingSpan() {
 document.getElementById('newNoteBtn').addEventListener('click', async () => {
   const res = await fetch('/api/notes', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ title: 'Başlıksız Not', content: '', category: '', color: '' })
   });
+  if (res.status === 401) { showAuthOverlay(); return; }
   const note = await res.json();
   await loadNotes();
   openNote(note.id);
@@ -255,9 +355,9 @@ document.getElementById('saveBtn').addEventListener('click', saveCurrentNote);
 
 async function saveCurrentNote() {
   if (!currentNoteId) return;
-  await fetch(`/api/notes/${currentNoteId}`, {
+  const res = await fetch(`/api/notes/${currentNoteId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({
       title: noteTitle.value || 'Başlıksız Not',
       content: noteContent.innerHTML,
@@ -265,6 +365,7 @@ async function saveCurrentNote() {
       color: currentColor
     })
   });
+  if (res.status === 401) { showAuthOverlay(); return; }
   saveStatus.textContent = 'Kaydedildi ✓';
   setTimeout(() => saveStatus.textContent = '', 2000);
   await loadNotes();
@@ -291,7 +392,10 @@ function updateWordCount() {
 document.getElementById('deleteNoteBtn').addEventListener('click', async () => {
   if (!currentNoteId) return;
   if (!confirm('Bu notu silmek istediğine emin misin?')) return;
-  await fetch(`/api/notes/${currentNoteId}`, { method: 'DELETE' });
+  await fetch(`/api/notes/${currentNoteId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${authToken}` }
+  });
   currentNoteId = null;
   noteTitle.value = '';
   noteContent.innerHTML = '';
@@ -371,7 +475,6 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
       return;
     }
 
-    // Diğer komutlar: mevcut seçimi koru, yoksa kayıtlı seçimi geri yükle
     restoreSelectionIfNeeded();
 
     if (cmd === 'bold') {
@@ -496,4 +599,5 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' });
 }
 
-loadNotes();
+// ── BAŞLAT ───────────────────────────────────────────────────────
+checkAuth();

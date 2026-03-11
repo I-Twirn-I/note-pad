@@ -61,10 +61,125 @@ body {
   gap: 10px;
 }
 
+/* AUTH OVERLAY */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.auth-box {
+  background: var(--editor-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+}
+
+.auth-box h2 {
+  font-size: 20px;
+  color: var(--text);
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.auth-box input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+
+.auth-box input:focus {
+  border-color: var(--accent);
+}
+
+.auth-box button#authSubmit {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 11px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auth-box button#authSubmit:hover {
+  background: var(--accent-hover);
+}
+
+.auth-error {
+  color: #ef4444;
+  font-size: 13px;
+  min-height: 18px;
+  text-align: center;
+}
+
+.auth-toggle {
+  background: none;
+  border: none;
+  color: var(--subtext);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: underline;
+}
+
+.auth-toggle:hover {
+  color: var(--text);
+}
+
+/* SIDEBAR HEADER */
 .sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-name {
+  font-size: 12px;
+  color: var(--subtext);
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logout-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--subtext);
+  transition: color 0.15s;
+}
+
+.logout-btn:hover {
+  color: var(--delete);
+  border-color: var(--delete);
 }
 
 .sidebar-header h1 {

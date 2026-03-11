@@ -8,10 +8,29 @@
 </head>
 <body class="light">
 
+  <!-- AUTH OVERLAY -->
+  <div id="authOverlay" class="auth-overlay">
+    <div class="auth-box">
+      <h2 id="authTitle">Not Defterine Giriş Yap</h2>
+      <div id="registerFields" style="display:none">
+        <input type="text" id="authUsername" placeholder="Kullanıcı adı" autocomplete="username" />
+      </div>
+      <input type="email" id="authEmail" placeholder="Email" autocomplete="email" />
+      <input type="password" id="authPassword" placeholder="Şifre" autocomplete="current-password" />
+      <p id="authError" class="auth-error"></p>
+      <button id="authSubmit">Giriş Yap</button>
+      <button id="authToggle" class="auth-toggle">Hesabın yok mu? Kayıt ol</button>
+    </div>
+  </div>
+
   <div class="sidebar">
     <div class="sidebar-header">
       <h1>Not Defteri</h1>
-      <button id="toggleTheme" title="Tema değiştir">🌙</button>
+      <div class="header-actions">
+        <span id="userNameDisplay" class="user-name"></span>
+        <button id="logoutBtn" title="Çıkış yap" class="logout-btn">⏻</button>
+        <button id="toggleTheme" title="Tema değiştir">🌙</button>
+      </div>
     </div>
     <div class="search-box">
       <input type="text" id="searchInput" placeholder="Notlarda ara..." />
