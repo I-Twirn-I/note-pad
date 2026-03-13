@@ -70,13 +70,6 @@ initDB().catch(err => {
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-async function uploadToCloudinary(buffer, mimetype, publicId) {
-  const b64 = buffer.toString('base64');
-  const dataUri = `data:${mimetype};base64,${b64}`;
-  return await cloudinary.uploader.upload(dataUri, {
-    resource_type: 'auto',
-  });
-}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -241,7 +234,7 @@ app.delete('/api/notes/:id', authMiddleware, async (req, res) => {
       [req.params.id]
     );
     for (const a of attachments.rows) {
-      try { await cloudinary.uploader.destroy(a.public_id, { resource_type: 'raw' }); } catch (e) {}
+      if (a.public_id) try { await cloudinary.uploader.destroy(a.public_id, { resource_type: 'raw' }); } catch (e) {}
     }
 
     await pool.query('DELETE FROM notes WHERE id = $1', [req.params.id]);
@@ -291,11 +284,10 @@ app.post('/api/notes/:id/attachments', authMiddleware, upload.single('file'), as
     if (!req.file) return res.status(400).json({ error: 'Dosya bulunamadı' });
 
     const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
-    const publicId = Date.now() + '-' + originalName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-.]/g, '');
-    const uploaded = await uploadToCloudinary(req.file.buffer, req.file.mimetype, publicId);
+    const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     const result = await pool.query(
       'INSERT INTO attachments (note_id, public_id, url, original_name) VALUES ($1, $2, $3, $4) RETURNING *',
-      [req.params.id, uploaded.public_id, uploaded.secure_url, originalName]
+      [req.params.id, '', dataUrl, originalName]
     );
     res.json(result.rows[0]);
   } catch (e) {
@@ -314,7 +306,7 @@ app.delete('/api/attachments/:id', authMiddleware, async (req, res) => {
     );
     if (!result.rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
 
-    try { await cloudinary.uploader.destroy(result.rows[0].public_id, { resource_type: 'raw' }); } catch (e) {}
+    if (result.rows[0].public_id) try { await cloudinary.uploader.destroy(result.rows[0].public_id, { resource_type: 'raw' }); } catch (e) {}
     await pool.query('DELETE FROM attachments WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (e) {
