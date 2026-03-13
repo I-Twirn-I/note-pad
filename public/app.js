@@ -218,7 +218,7 @@ async function openNote(id) {
   noteTitle.value = note.title || '';
   noteContent.innerHTML = note.content || '';
   noteCategory.value = note.category || '';
-  currentColor = note.color || '';
+  currentColor = '';
   savedRange = null;
   updateColorButtons();
   updateWordCount();
