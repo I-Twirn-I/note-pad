@@ -3,7 +3,6 @@ const { Pool } = require('pg');
 const path = require('path');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -64,16 +63,16 @@ initDB().catch(err => {
   process.exit(1);
 });
 
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: async (req, file) => ({
-    folder: 'notepad-attachments',
-    resource_type: 'raw',
-    public_id: Date.now() + '-' + Buffer.from(file.originalname, 'latin1').toString('utf8').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-.]/g, ''),
-  }),
-});
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+function uploadToCloudinary(buffer, publicId) {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      { folder: 'notepad-attachments', resource_type: 'raw', public_id: publicId },
+      (error, result) => error ? reject(error) : resolve(result)
+    ).end(buffer);
+  });
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -288,12 +287,15 @@ app.post('/api/notes/:id/attachments', authMiddleware, upload.single('file'), as
     if (!req.file) return res.status(400).json({ error: 'Dosya bulunamadı' });
 
     const originalName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+    const publicId = Date.now() + '-' + originalName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-.]/g, '');
+    const uploaded = await uploadToCloudinary(req.file.buffer, publicId);
     const result = await pool.query(
       'INSERT INTO attachments (note_id, public_id, url, original_name) VALUES ($1, $2, $3, $4) RETURNING *',
-      [req.params.id, req.file.filename, req.file.path, originalName]
+      [req.params.id, uploaded.public_id, uploaded.secure_url, originalName]
     );
     res.json(result.rows[0]);
   } catch (e) {
+    console.error('Attachment upload error:', e);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
