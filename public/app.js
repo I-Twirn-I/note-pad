@@ -439,11 +439,30 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
   for (const file of Array.from(e.target.files)) {
     const formData = new FormData();
     formData.append('file', file);
-    await fetch(`/api/notes/${currentNoteId}/attachments`, {
+    const res = await fetch(`/api/notes/${currentNoteId}/attachments`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${authToken}` },
       body: formData
     });
+    if (res.ok && file.type.startsWith('image/')) {
+      const attachment = await res.json();
+      const img = document.createElement('img');
+      img.src = attachment.url;
+      restoreSelection();
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        range.collapse(false);
+        range.insertNode(img);
+        range.setStartAfter(img);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } else {
+        noteContent.appendChild(img);
+      }
+      autoSave();
+      updateWordCount();
+    }
   }
   e.target.value = '';
   await loadAttachments();

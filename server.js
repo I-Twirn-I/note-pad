@@ -68,7 +68,7 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
     folder: 'notepad-attachments',
-    resource_type: 'raw',
+    resource_type: 'auto',
     public_id: Date.now() + '-' + Buffer.from(file.originalname, 'latin1').toString('utf8').replace(/\s+/g, '_'),
   }),
 });
