@@ -225,6 +225,7 @@ async function openNote(id) {
   saveStatus.textContent = '';
   renderNoteList();
   showEditor();
+  loadAttachments();
 }
 
 function showEditor() {
@@ -409,45 +410,44 @@ document.getElementById('deleteNoteBtn').addEventListener('click', async () => {
 });
 
 // ── DOSYA YÜKLEME ───────────────────────────────────────────────
-document.getElementById('fileInput').addEventListener('change', (e) => {
+document.getElementById('fileInput').addEventListener('change', async (e) => {
   if (!currentNoteId) return;
-  Array.from(e.target.files).forEach(file => {
-    const reader = new FileReader();
-    if (file.type.startsWith('image/')) {
-      reader.onload = (ev) => {
-        const img = document.createElement('img');
-        img.src = ev.target.result;
-        img.style.maxWidth = '100%';
-        restoreSelection();
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount) {
-          const range = sel.getRangeAt(0);
-          range.collapse(false);
-          range.insertNode(img);
-          range.setStartAfter(img);
-          sel.removeAllRanges();
-          sel.addRange(range);
-        } else {
-          noteContent.appendChild(img);
-        }
-        autoSave();
-        updateWordCount();
-      };
-      reader.readAsDataURL(file);
-    } else {
-      reader.onload = (ev) => {
-        restoreSelection();
-        document.execCommand('insertText', false, ev.target.result);
-        autoSave();
-        updateWordCount();
-      };
-      reader.readAsText(file, 'UTF-8');
-    }
-  });
+  for (const file of Array.from(e.target.files)) {
+    const formData = new FormData();
+    formData.append('file', file);
+    await fetch(`/api/notes/${currentNoteId}/attachments`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}` },
+      body: formData
+    });
+  }
   e.target.value = '';
+  await loadAttachments();
 });
 
-function loadAttachments() {}
+async function loadAttachments() {
+  if (!currentNoteId) return;
+  const res = await fetch(`/api/notes/${currentNoteId}/attachments`, {
+    headers: { 'Authorization': `Bearer ${authToken}` }
+  });
+  if (!res.ok) return;
+  const attachments = await res.json();
+  const list = document.getElementById('attachmentList');
+  list.innerHTML = '';
+  attachments.forEach(a => {
+    const li = document.createElement('li');
+    li.innerHTML = `<a href="${a.url}" target="_blank" rel="noopener">${escapeHtml(a.original_name)}</a>
+      <button class="del-attachment" data-id="${a.id}" title="Sil">✕</button>`;
+    li.querySelector('.del-attachment').addEventListener('click', async () => {
+      await fetch(`/api/attachments/${a.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      loadAttachments();
+    });
+    list.appendChild(li);
+  });
+}
 
 // ── ARAMA & FİLTRE ──────────────────────────────────────────────
 searchInput.addEventListener('input', loadNotes);
