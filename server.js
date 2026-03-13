@@ -73,7 +73,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 function uploadToCloudinary(buffer, publicId) {
   return new Promise((resolve, reject) => {
     cloudinary.uploader.upload_stream(
-      { folder: 'notepad-attachments', resource_type: 'raw', public_id: publicId },
+      { folder: 'notepad-attachments', resource_type: 'auto', public_id: publicId },
       (error, result) => error ? reject(error) : resolve(result)
     ).end(buffer);
   });
