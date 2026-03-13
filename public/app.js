@@ -211,6 +211,7 @@ function renderNoteList() {
 }
 
 async function openNote(id) {
+  clearTimeout(saveTimeout);
   currentNoteId = id;
   const res = await fetch(`/api/notes/${id}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
   if (res.status === 401) { showAuthOverlay(); return; }
