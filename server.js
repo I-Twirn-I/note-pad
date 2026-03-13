@@ -68,7 +68,7 @@ const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => ({
     folder: 'notepad-attachments',
-    resource_type: 'auto',
+    resource_type: file.mimetype.startsWith('image/') ? 'image' : 'raw',
     public_id: Date.now() + '-' + Buffer.from(file.originalname, 'latin1').toString('utf8').replace(/\s+/g, '_'),
   }),
 });
@@ -238,6 +238,7 @@ app.delete('/api/notes/:id', authMiddleware, async (req, res) => {
       [req.params.id]
     );
     for (const a of attachments.rows) {
+      try { await cloudinary.uploader.destroy(a.public_id, { resource_type: 'image' }); } catch (e) {}
       try { await cloudinary.uploader.destroy(a.public_id, { resource_type: 'raw' }); } catch (e) {}
     }
 
@@ -308,6 +309,7 @@ app.delete('/api/attachments/:id', authMiddleware, async (req, res) => {
     );
     if (!result.rows[0]) return res.status(404).json({ error: 'Bulunamadı' });
 
+    try { await cloudinary.uploader.destroy(result.rows[0].public_id, { resource_type: 'image' }); } catch (e) {}
     try { await cloudinary.uploader.destroy(result.rows[0].public_id, { resource_type: 'raw' }); } catch (e) {}
     await pool.query('DELETE FROM attachments WHERE id = $1', [req.params.id]);
     res.json({ success: true });
