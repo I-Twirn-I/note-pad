@@ -437,36 +437,13 @@ document.getElementById('deleteNoteBtn').addEventListener('click', async () => {
 document.getElementById('fileInput').addEventListener('change', async (e) => {
   if (!currentNoteId) return;
   for (const file of Array.from(e.target.files)) {
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = document.createElement('img');
-        img.src = ev.target.result;
-        restoreSelection();
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount) {
-          const range = sel.getRangeAt(0);
-          range.collapse(false);
-          range.insertNode(img);
-          range.setStartAfter(img);
-          sel.removeAllRanges();
-          sel.addRange(range);
-        } else {
-          noteContent.appendChild(img);
-        }
-        autoSave();
-        updateWordCount();
-      };
-      reader.readAsDataURL(file);
-    } else {
-      const formData = new FormData();
-      formData.append('file', file);
-      await fetch(`/api/notes/${currentNoteId}/attachments`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${authToken}` },
-        body: formData
-      });
-    }
+    const formData = new FormData();
+    formData.append('file', file);
+    await fetch(`/api/notes/${currentNoteId}/attachments`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}` },
+      body: formData
+    });
   }
   e.target.value = '';
   await loadAttachments();
