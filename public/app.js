@@ -219,6 +219,10 @@ async function openNote(id) {
   noteContent.innerHTML = note.content || '';
   noteCategory.value = note.category || '';
   currentColor = '';
+  currentFontSize = '';
+  currentFontFamily = '';
+  document.getElementById('fontSizeSelect').value = '16';
+  document.getElementById('fontFamily').value = 'Segoe UI';
   savedRange = null;
   updateColorButtons();
   updateWordCount();
