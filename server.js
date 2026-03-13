@@ -69,7 +69,7 @@ const storage = new CloudinaryStorage({
   params: async (req, file) => ({
     folder: 'notepad-attachments',
     resource_type: file.mimetype.startsWith('image/') ? 'image' : 'raw',
-    public_id: Date.now() + '-' + Buffer.from(file.originalname, 'latin1').toString('utf8').replace(/\s+/g, '_'),
+    public_id: Date.now() + '-' + Buffer.from(file.originalname, 'latin1').toString('utf8').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-.]/g, ''),
   }),
 });
 
@@ -314,8 +314,14 @@ app.delete('/api/attachments/:id', authMiddleware, async (req, res) => {
     await pool.query('DELETE FROM attachments WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (e) {
+    console.error('Attachment upload error:', e);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
+});
+
+app.use((err, req, res, next) => {
+  console.error('Middleware error:', err);
+  res.status(500).json({ error: err.message || 'Sunucu hatası' });
 });
 
 const PORT = process.env.PORT || 3000;
