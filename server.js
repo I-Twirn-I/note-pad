@@ -14,11 +14,6 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-console.log('Cloudinary config:', {
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET ? '***' + process.env.CLOUDINARY_API_SECRET.slice(-4) : 'YOK',
-});
 
 const app = express();
 
@@ -320,7 +315,7 @@ app.delete('/api/attachments/:id', authMiddleware, async (req, res) => {
     await pool.query('DELETE FROM attachments WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (e) {
-    console.error('Attachment upload error:', e);
+    console.error('Attachment delete error:', e);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
