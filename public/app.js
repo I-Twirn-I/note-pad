@@ -280,9 +280,28 @@ function updateToolbarState() {
   } catch(e) {}
 }
 
+function getColorAtCursor() {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount) return '';
+  let node = sel.getRangeAt(0).startContainer;
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+  while (node && node !== noteContent) {
+    if (node.style && node.style.color) {
+      const c = node.style.color;
+      if (c.startsWith('#')) return c.toLowerCase();
+      const m = c.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (m) return '#' + [m[1], m[2], m[3]].map(n => parseInt(n).toString(16).padStart(2, '0')).join('');
+    }
+    node = node.parentNode;
+  }
+  return '';
+}
+
 document.addEventListener('selectionchange', () => {
   if (noteContent.contains(document.getSelection()?.anchorNode)) {
     updateToolbarState();
+    currentColor = getColorAtCursor();
+    updateColorButtons();
   }
 });
 
