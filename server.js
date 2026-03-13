@@ -74,9 +74,7 @@ async function uploadToCloudinary(buffer, mimetype, publicId) {
   const b64 = buffer.toString('base64');
   const dataUri = `data:${mimetype};base64,${b64}`;
   return await cloudinary.uploader.upload(dataUri, {
-    folder: 'notepad-attachments',
     resource_type: 'auto',
-    public_id: publicId,
   });
 }
 
