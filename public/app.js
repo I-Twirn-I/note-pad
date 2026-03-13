@@ -599,16 +599,15 @@ document.getElementById('fontFamily').addEventListener('change', (e) => {
 document.getElementById('pdfBtn').addEventListener('click', () => {
   if (!currentNoteId) return;
   const title = noteTitle.value || 'Not';
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
-    <style>body{font-family:'Segoe UI',sans-serif;padding:40px;font-size:14px;line-height:1.6;color:#111}
-    h1{font-size:22px;margin-bottom:16px;border-bottom:2px solid #ccc;padding-bottom:8px}
-    h2{font-size:18px}hr{border:none;border-top:1px solid #ccc;margin:16px 0}
-    img{max-width:100%}@media print{body{padding:20px}}</style>
-    </head><body><h1>${title}</h1>${noteContent.innerHTML}</body></html>`);
-  printWindow.document.close();
-  printWindow.focus();
-  setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'font-family:Segoe UI,sans-serif;font-size:14px;line-height:1.6;color:#111;padding:10px';
+  wrapper.innerHTML = `<h1 style="font-size:22px;margin-bottom:16px;border-bottom:2px solid #ccc;padding-bottom:8px">${escapeHtml(title)}</h1>${noteContent.innerHTML}`;
+  html2pdf().set({
+    margin: 15,
+    filename: `${title}.pdf`,
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(wrapper).save();
 });
 
 // ── DIŞA AKTAR ──────────────────────────────────────────────────
