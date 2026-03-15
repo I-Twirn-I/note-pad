@@ -675,7 +675,9 @@ document.getElementById('doTranslateBtn').addEventListener('click', async () => 
 document.getElementById('applyTranslationBtn').addEventListener('click', () => {
   const result = document.getElementById('translateResult').value;
   if (!result) return;
-  noteContent.innerText = result;
+  noteContent.focus();
+  document.execCommand('selectAll');
+  document.execCommand('insertText', false, result);
   updateWordCount();
   autoSave();
   document.getElementById('translateModal').style.display = 'none';
