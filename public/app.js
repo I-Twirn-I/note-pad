@@ -686,7 +686,7 @@ document.getElementById('applyTranslationBtn').addEventListener('click', () => {
 async function translateChunks(chunks, from, to) {
   const results = [];
   for (const chunk of chunks) {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${from}|${to}`;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${from}|${to}&de=kuzeyture2008@gmail.com`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('API isteği başarısız oldu');
     const data = await res.json();
