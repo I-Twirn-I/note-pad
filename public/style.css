@@ -432,7 +432,8 @@ body {
 
 .fmt-btn,
 #exportBtn,
-#pdfBtn {
+#pdfBtn,
+#translateBtn {
   background: none;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -445,7 +446,8 @@ body {
 
 .fmt-btn:hover,
 #exportBtn:hover,
-#pdfBtn:hover {
+#pdfBtn:hover,
+#translateBtn:hover {
   background: var(--item-hover);
   border-color: var(--border);
 }
