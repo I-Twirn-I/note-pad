@@ -622,6 +622,97 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' });
 }
 
+// ── ÇEVİRİ ──────────────────────────────────────────────────────
+document.getElementById('translateBtn').addEventListener('click', () => {
+  if (!currentNoteId) return;
+  const text = noteContent.innerText.trim();
+  const wordCount = text ? text.split(/\s+/).length : 0;
+  document.getElementById('translateWordInfo').textContent = `${wordCount} kelime · Günlük limit: ~5000 kelime`;
+  document.getElementById('translateResult').value = '';
+  document.getElementById('translateStatus').textContent = '';
+  document.getElementById('applyTranslationBtn').disabled = true;
+  document.getElementById('translateModal').style.display = 'flex';
+});
+
+document.getElementById('translateModalClose').addEventListener('click', () => {
+  document.getElementById('translateModal').style.display = 'none';
+});
+
+document.getElementById('translateModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('translateModal')) {
+    document.getElementById('translateModal').style.display = 'none';
+  }
+});
+
+document.getElementById('doTranslateBtn').addEventListener('click', async () => {
+  const from = document.getElementById('translateFrom').value;
+  const to = document.getElementById('translateTo').value;
+  const text = noteContent.innerText.trim();
+  const statusEl = document.getElementById('translateStatus');
+  const btn = document.getElementById('doTranslateBtn');
+
+  if (!text) { statusEl.textContent = 'Not içeriği boş!'; return; }
+  if (from === to) { statusEl.textContent = 'Kaynak ve hedef dil aynı olamaz!'; return; }
+
+  btn.disabled = true;
+  document.getElementById('applyTranslationBtn').disabled = true;
+  document.getElementById('translateResult').value = '';
+
+  try {
+    const chunks = chunkText(text, 490);
+    statusEl.textContent = chunks.length > 1 ? `Çeviriliyor... (${chunks.length} parça)` : 'Çeviriliyor...';
+    const translated = await translateChunks(chunks, from, to);
+    document.getElementById('translateResult').value = translated;
+    statusEl.textContent = '✓ Çeviri tamamlandı';
+    document.getElementById('applyTranslationBtn').disabled = false;
+  } catch (e) {
+    statusEl.textContent = 'Hata: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('applyTranslationBtn').addEventListener('click', () => {
+  const result = document.getElementById('translateResult').value;
+  if (!result) return;
+  noteContent.innerText = result;
+  updateWordCount();
+  autoSave();
+  document.getElementById('translateModal').style.display = 'none';
+  saveStatus.textContent = 'Çeviri uygulandı ✓';
+  setTimeout(() => saveStatus.textContent = '', 2000);
+});
+
+async function translateChunks(chunks, from, to) {
+  const results = [];
+  for (const chunk of chunks) {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=${from}|${to}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('API isteği başarısız oldu');
+    const data = await res.json();
+    if (data.responseStatus !== 200) throw new Error(data.responseDetails || 'Çeviri başarısız');
+    results.push(data.responseData.translatedText);
+  }
+  return results.join('\n');
+}
+
+function chunkText(text, maxLen) {
+  if (text.length <= maxLen) return [text];
+  const chunks = [];
+  let remaining = text;
+  while (remaining.length > maxLen) {
+    let splitAt = remaining.lastIndexOf('. ', maxLen);
+    if (splitAt === -1) splitAt = remaining.lastIndexOf('\n', maxLen);
+    if (splitAt === -1) splitAt = remaining.lastIndexOf(' ', maxLen);
+    if (splitAt === -1) splitAt = maxLen;
+    else splitAt += 1;
+    chunks.push(remaining.slice(0, splitAt).trim());
+    remaining = remaining.slice(splitAt).trim();
+  }
+  if (remaining.length > 0) chunks.push(remaining);
+  return chunks;
+}
+
 // ── BAŞLAT ───────────────────────────────────────────────────────
 noteContent.addEventListener('paste', (e) => {
   e.preventDefault();
