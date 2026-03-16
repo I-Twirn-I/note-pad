@@ -21,6 +21,7 @@ A simple and powerful note-taking application that runs directly in your browser
 - 📄 Export notes as plain text or PDF
 - 📂 Upload documents
 - 📋 Copy text within the editor
+- 📖 Translates the written note into the desired language
 
 ## 🛠️ Technologies
 - HTML5
