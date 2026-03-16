@@ -626,8 +626,9 @@ function formatDate(dateStr) {
 document.getElementById('translateBtn').addEventListener('click', () => {
   if (!currentNoteId) return;
   const text = noteContent.innerText.trim();
-  const wordCount = text ? text.split(/\s+/).length : 0;
-  document.getElementById('translateWordInfo').textContent = `${wordCount} kelime · Günlük limit: ~5000 kelime`;
+  const wordInfoEl = document.getElementById('translateWordInfo');
+  wordInfoEl.textContent = '';
+  wordInfoEl.style.color = '';
   document.getElementById('translateResult').value = '';
   document.getElementById('translateStatus').textContent = '';
   document.getElementById('applyTranslationBtn').disabled = true;
@@ -665,8 +666,24 @@ document.getElementById('doTranslateBtn').addEventListener('click', async () => 
     document.getElementById('translateResult').value = translated;
     statusEl.textContent = '✓ Çeviri tamamlandı';
     document.getElementById('applyTranslationBtn').disabled = false;
+    const wordInfoEl = document.getElementById('translateWordInfo');
+    wordInfoEl.textContent = '';
+    wordInfoEl.style.color = '';
   } catch (e) {
-    statusEl.textContent = 'Hata: ' + e.message;
+    const isLimitError = e.message && (
+      e.message.toUpperCase().includes('ALL AVAILABLE') ||
+      e.message.toUpperCase().includes('QUOTA') ||
+      e.message.toUpperCase().includes('LIMIT') ||
+      e.message.includes('429')
+    );
+    if (isLimitError) {
+      const wordInfoEl = document.getElementById('translateWordInfo');
+      wordInfoEl.textContent = 'Kelime limitini aştınız, her gece yenilenir';
+      wordInfoEl.style.color = '#ef4444';
+      statusEl.textContent = '';
+    } else {
+      statusEl.textContent = 'Hata: ' + e.message;
+    }
   } finally {
     btn.disabled = false;
   }
