@@ -325,7 +325,11 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || 'Sunucu hatası' });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Sunucu çalışıyor: http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Sunucu çalışıyor: http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
